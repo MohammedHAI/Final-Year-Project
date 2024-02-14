@@ -13,12 +13,14 @@
 // clock speed
 // whether halted or not
 
+// instructions defined in Instruction.java
+
 public class VirtualComputer {
-    final private int MEMORYSIZE = 16;
-    final private int NUMBEROFREGISTERS = 4;
+    private final int MEMORYSIZE = 16;
+    private final int NUMBEROFREGISTERS = 4;
 
     public MainMemory mm;
-    private byte[] registers;
+    private Register[] registers;
     private int statusFlag;
     private int PC;
     private int SP;
@@ -26,8 +28,14 @@ public class VirtualComputer {
     private boolean halted;
 
     public VirtualComputer(int clockSpeed) {
-        mm = new MainMemory(16);
-        registers = new byte[NUMBEROFREGISTERS];
+        mm = new MainMemory(MEMORYSIZE);
+
+        registers = new Register[NUMBEROFREGISTERS];
+        registers[0] = new Register("Register A");
+        registers[1] = new Register("Register B");
+        registers[2] = new Register("Register C");
+        registers[3] = new Register("Register D");
+
         statusFlag = 0;
         PC = 0;
         SP = 0;
@@ -35,7 +43,7 @@ public class VirtualComputer {
         halted = false;
     }
 
-    public void runAndPrint() {
+    public void run(boolean debug) {
         while (!halted) {
             try {
                 Thread.sleep((long) ((1 / clockSpeed) * 1000)); // multiply by 1000 because Thread.sleep takes milliseconds
@@ -45,28 +53,30 @@ public class VirtualComputer {
                 return;
             }
 
+            // fetch
             Instruction currentInstruction = new Instruction(mm.read((byte) PC), mm.read((byte) (PC + 1)));
 
-            System.out.println(currentInstruction);
-            System.out.println(mm);
+            // debug output
+            if (debug) {
+                System.out.println(currentInstruction);
+                System.out.println(mm);
 
-            // temp, halt if opcode 0
-            if (mm.read((byte) PC) == 0) {
+                for (int i = 0; i < NUMBEROFREGISTERS; i++) {
+                    System.out.println(registers[i]);
+                }
+
+                System.out.println();
+            }
+
+            // decode and execute
+            halted = currentInstruction.execute(mm, (byte) PC, registers);
+
+            if (!halted) {
+                PC = PC + 2;
+            }
+            else {
                 System.out.println("halted");
-                halted = true;
             }
-            if (halted) {
-                break;
-            }
-
-            currentInstruction.execute(mm, (byte) PC, registers);
-            PC = PC + 2;
         }
-    }
-
-
-    // ALL instruction definitions
-    public void LOAD(byte operand) {
-
     }
 }

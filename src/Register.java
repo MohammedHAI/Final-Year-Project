@@ -3,8 +3,27 @@
     Date created:: 07/12/2023
  */
 
-// an instruction takes 2 bytes in memory
+// Base class for general and special registers
 
 public class Register {
-    byte data;
+    private final String name;
+    private byte data;
+
+    public Register(String name) {
+        this.name = name;
+        data = 0;
+    }
+
+    public byte read() {
+        return data;
+    }
+
+    public void write(byte newData) {
+        data = newData;
+    }
+
+    @Override
+    public String toString() {
+        return name + ": " + data;
+    }
 }

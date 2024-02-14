@@ -21,10 +21,11 @@ public class MainMemory {
     }
 
     public String toString() {
-        String s = "";
+        StringBuilder s = new StringBuilder();
         for (int i = 0; i < data.length; i++) {
-            s = s + String.valueOf(data[i]) + ", ";
+            s.append(String.valueOf(data[i]));
+            if (i != data.length - 1) { s.append(", ");}
         }
-        return s;
+        return s.toString();
     }
 }
