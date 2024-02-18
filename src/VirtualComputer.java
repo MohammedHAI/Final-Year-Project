@@ -15,17 +15,18 @@
 
 // instructions defined in Instruction.java
 
-public class VirtualComputer {
-    private final int MEMORYSIZE = 16;
+public class VirtualComputer implements Runnable {
+    private final int MEMORYSIZE = 256;
     private final int NUMBEROFREGISTERS = 4;
 
     public MainMemory mm;
-    private Register[] registers;
-    private int statusFlag;
-    private int PC;
-    private int SP;
-    private double clockSpeed;
-    private boolean halted;
+    public Register[] registers;
+    public int statusFlag;
+    public int PC;
+    public int SP;
+    public double clockSpeed;
+    public boolean halted;
+    private boolean debug;
 
     public VirtualComputer(int clockSpeed) {
         mm = new MainMemory(MEMORYSIZE);
@@ -43,7 +44,9 @@ public class VirtualComputer {
         halted = false;
     }
 
-    public void run(boolean debug) {
+    // Don't call directly if debug output needed
+    @Override
+    public void run() {
         while (!halted) {
             try {
                 Thread.sleep((long) ((1 / clockSpeed) * 1000)); // multiply by 1000 because Thread.sleep takes milliseconds
@@ -74,9 +77,15 @@ public class VirtualComputer {
             if (!halted) {
                 PC = PC + 2;
             }
-            else {
+            else if (debug) {
                 System.out.println("halted");
             }
         }
+    }
+
+    // Main entry point for debugging
+    public void runAndPrint() {
+        this.debug = true;
+        run();
     }
 }

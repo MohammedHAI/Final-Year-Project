@@ -6,7 +6,7 @@
 public class TestModel {
 
     public static void main(String[] args) {
-        VirtualComputer vc = new VirtualComputer(10);
+        VirtualComputer vc = new VirtualComputer(1); // 1 Hz
 
         // program does the following:
         //
@@ -26,7 +26,7 @@ public class TestModel {
             vc.mm.write((byte) i, data[i]);
         }
 
-        vc.run(true);
+        vc.runAndPrint();
     }
 
 }

@@ -12,17 +12,23 @@ import javax.swing.*;
 // - JScrollPane
 // - JButton
 public class CodeEditor extends JComponent {
+    public JScrollPane scrollPane;
+    public JTextArea textArea;
+    public Annotation annotation;
+    public JButton compileButton;
+
     public CodeEditor() {
         // setup component
         this.setLayout(new BorderLayout());
 
         // define components
-        JScrollPane scrollPane = new JScrollPane();
-        JTextArea textArea = new JTextArea();
+        scrollPane = new JScrollPane();
+        textArea = new JTextArea();
+        annotation = new Annotation("test");
+        compileButton = new JButton("Compile");
+
         textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         textArea.setLineWrap(true);
-        Annotation annotation = new Annotation("test");
-        JButton compileButton = new JButton("Compile");
 
         // add components
         scrollPane.setViewportView(textArea);

@@ -20,6 +20,35 @@ public class MainMemory {
         data[index] = value;
     }
 
+    public void writeBlock(byte[] block) {
+        if (block.length > data.length) { // block is larger
+            for (int i = 0; i < data.length; i++) {
+                data[i] = block[i];
+            }
+            System.out.println("Not all data written, block is too large");
+        }
+        else if (block.length < data.length) { // block is smaller
+            for (int i = 0; i < block.length; i++) {
+                data[i] = block[i];
+            }
+        }
+        else { // block size matches memory size
+            data = block;
+        }
+
+    }
+
+    // get data up to a specified index
+    public byte[] getData(int index) {
+        byte[] temp = new byte[index];
+
+        for (int i = 0; i < temp.length; i++) {
+            temp[i] = data[i];
+        }
+
+        return temp;
+    }
+
     public String toString() {
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < data.length; i++) {

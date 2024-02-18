@@ -15,18 +15,26 @@ import java.awt.*;
 public class ControlPanel extends JComponent {
     private final String runState = "Run";
     private final String stopState = "Stop";
+
+    public JButton runStopButton;
+    public JButton stepForwardsButton;
+    public JButton stepBackwardsButton;
+    public JButton compileButton;
+    public JPanel panel;
+
     public ControlPanel() {
         setLayout(new BorderLayout());
 
         // define components
-        JButton runStopButton = new JButton(runState);
-        JButton stepForwardsButton = new JButton("Step Forwards");
-        JButton stepBackwardsButton = new JButton("Step Backwards");
-        JButton compileButton = new JButton("Compile");
-        JPanel panel = new JPanel();
+        runStopButton = new JButton(runState);
+        stepForwardsButton = new JButton("Step Forwards");
+        stepBackwardsButton = new JButton("Step Backwards");
+        compileButton = new JButton("Compile");
+        panel = new JPanel();
 
         // modify components
         panel.setLayout(new GridLayout(2, 2));
+        //compileButton.setMargin(new Insets(0, 0, 30, 30));
 
         // add components
         panel.add(runStopButton);

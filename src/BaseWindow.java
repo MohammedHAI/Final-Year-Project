@@ -14,43 +14,46 @@ import java.nio.ByteOrder;
 // Has no functionality on its own as it is intended to be the main entry
 // point of the application
 public class BaseWindow {
+    public CodeEditor editor;
+    public MemoryViewer viewer;
+    public ControlPanel controls;
+    public RegisterPanel registers;
+    public OutputArea output;
+    public JPanel mainPanel;
+    public ToolMenuBar menu;
 
-    public static void main(String[] args) {
+    public BaseWindow(byte[] memory) {
         JFrame frame = new JFrame("Main Window");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(1280, 720));
         frame.setLayout(new BorderLayout());
 
         // defining components
-        CodeEditor editor = new CodeEditor();
-        MemoryViewer viewer = new MemoryViewer();
-        ControlPanel controls = new ControlPanel();
-        RegisterPanel registers = new RegisterPanel();
-        OutputArea output = new OutputArea();
+        editor = new CodeEditor();
+        viewer = new MemoryViewer(memory);
+        controls = new ControlPanel();
+        registers = new RegisterPanel();
+        output = new OutputArea();
 
         JPanel mainPanel = new JPanel();
-        JPanel subPanel = new JPanel();
         ToolMenuBar menu = new ToolMenuBar();
 
         mainPanel.setLayout(new BorderLayout());
-        subPanel.setLayout(new GridLayout(3, 3));
-
-        controls.setPreferredSize(new Dimension(1, 2));
-        viewer.setPreferredSize(new Dimension(3, 1));
-        output.setPreferredSize(new Dimension(3, 1));
 
         // adding components
         frame.add(editor, BorderLayout.WEST);
-        //frame.add(viewer, BorderLayout.EAST);
+        frame.add(viewer, BorderLayout.EAST);
         mainPanel.add(controls, BorderLayout.NORTH);
         mainPanel.add(registers, BorderLayout.SOUTH);
-        subPanel.add(mainPanel);
-        subPanel.add(viewer);
-        subPanel.add(output);
-        frame.add(subPanel, BorderLayout.CENTER);
-        //frame.add(mainPanel, BorderLayout.CENTER);
-        //frame.add(output, BorderLayout.SOUTH);
+        frame.add(mainPanel, BorderLayout.CENTER);
+        frame.add(output, BorderLayout.SOUTH);
         frame.setJMenuBar(menu);
+
+        // temp, test connecting to backend
+        JTextField temp = (JTextField) registers.getComponent(1);
+        //JTextField temp2 = (JTextField) temp.getComponent(0);
+        System.out.println(temp);
+        //System.out.println(temp2);
 
         frame.pack();
         frame.setVisible(true);

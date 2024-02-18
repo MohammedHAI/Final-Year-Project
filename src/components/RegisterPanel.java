@@ -15,7 +15,25 @@ import java.awt.*;
 public class RegisterPanel extends JComponent {
     private JLabel[] labels; // holds one label per register
     private JTextField[] textFields; // holds one field per register
-    private final int NUMREGISTERS = 8;
+    private final int NUMREGISTERS = 8; // TODO: Redesign so that it is suited for special registers
+
+    public JLabel label1 = new JLabel("Register A");
+    public JLabel label2 = new JLabel("PC");
+    public JLabel label3 = new JLabel("Register B");
+    public JLabel label4 = new JLabel("SP");
+    public JLabel label5 = new JLabel("Register C");
+    public JLabel label6 = new JLabel("Status Flags");
+    public JLabel label7 = new JLabel("Register D");
+    public JLabel label8 = new JLabel("Halted");
+
+    public JTextField field1 = new JTextField("0");
+    public JTextField field2 = new JTextField("0");
+    public JTextField field3 = new JTextField("0");
+    public JTextField field4 = new JTextField("0");
+    public JTextField field5 = new JTextField("0");
+    public JTextField field6 = new JTextField("0");
+    public JTextField field7 = new JTextField("0");
+    public JTextField field8 = new JTextField("No");
 
     // all text data initialised here
     public RegisterPanel() {
@@ -24,25 +42,25 @@ public class RegisterPanel extends JComponent {
         // defining components
 
         labels = new JLabel[] {
-                new JLabel("Register A"),
-                new JLabel("Register B"),
-                new JLabel("Register C"),
-                new JLabel("Register D"),
-                new JLabel("Register E"),
-                new JLabel("Register F"),
-                new JLabel("Register G"),
-                new JLabel("Register H")
+                label1,
+                label2,
+                label3,
+                label4,
+                label5,
+                label6,
+                label7,
+                label8
         };
 
         textFields = new JTextField[] {
-                new JTextField(),
-                new JTextField(),
-                new JTextField(),
-                new JTextField(),
-                new JTextField(),
-                new JTextField(),
-                new JTextField(),
-                new JTextField()
+                field1,
+                field2,
+                field3,
+                field4,
+                field5,
+                field6,
+                field7,
+                field8
         };
 
         // adding components
