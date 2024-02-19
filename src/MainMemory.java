@@ -12,7 +12,7 @@ public class MainMemory {
         data = new byte[size];
     }
 
-    public byte read(byte index) {
+    public byte read(int index) {
         return data[index];
     }
 
@@ -47,6 +47,10 @@ public class MainMemory {
         }
 
         return temp;
+    }
+
+    public int size() {
+        return data.length;
     }
 
     public String toString() {
