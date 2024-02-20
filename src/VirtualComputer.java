@@ -88,4 +88,16 @@ public class VirtualComputer implements Runnable {
         this.debug = true;
         run();
     }
+
+    public void reset() {
+        registers[0].write((byte) 0);
+        registers[1].write((byte) 0);
+        registers[2].write((byte) 0);
+        registers[3].write((byte) 0);
+
+        statusFlag = 0;
+        PC = 0;
+        SP = 0;
+        halted = true;
+    }
 }

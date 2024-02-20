@@ -19,7 +19,7 @@ public class ControlPanel extends JComponent {
     public JButton runStopButton;
     public JButton stepForwardsButton;
     public JButton stepBackwardsButton;
-    public JButton compileButton;
+    public JButton resetButton;
     public JPanel panel;
 
     public ControlPanel() {
@@ -29,7 +29,7 @@ public class ControlPanel extends JComponent {
         runStopButton = new JButton(runState);
         stepForwardsButton = new JButton("Step Forwards");
         stepBackwardsButton = new JButton("Step Backwards");
-        compileButton = new JButton("Compile");
+        resetButton = new JButton("Reset");
         panel = new JPanel();
 
         // modify components
@@ -40,7 +40,7 @@ public class ControlPanel extends JComponent {
         panel.add(runStopButton);
         panel.add(stepForwardsButton);
         panel.add(stepBackwardsButton);
-        panel.add(compileButton);
+        panel.add(resetButton);
         add(panel);
     }
 }

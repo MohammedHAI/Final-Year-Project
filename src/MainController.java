@@ -6,7 +6,13 @@
 // This class actually runs the virtual computer
 // and stitches it together with the GUI
 
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.BadLocationException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 
 public class MainController {
     public static void main(String[] args) {
@@ -27,17 +33,60 @@ public class MainController {
         // main code, run vc in separate thread from GUI
 
         BaseWindow bw = new BaseWindow(vc.mm.getData(16));
+        startVirtualComputer(vcThread);
 
-        try {
-            vcThread.start(); // will call VirtualComputer.run()
-        }
-        catch (Exception e) {
-            System.out.println("Virtual Computer has crashed!");
-            e.printStackTrace();
-        }
+        // test code, make run/stop and reset buttons work
+        bw.controls.runStopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                vc.halted = !vc.halted;
+                if (!vc.halted) {
+                    Thread vcThread = new Thread(vc);
+                    startVirtualComputer(vcThread);
+                }
+            }
+        });
+
+        bw.controls.resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                vc.reset();
+            }
+        });
+
+        // test code, compile code in code editor to memory
+        bw.editor.compileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ArrayList<Byte> compiledCode = new ArrayList<>();
+                JTextArea textArea = bw.editor.textArea;
+
+                // compile instructions to machine code
+                int numberOfLines = textArea.getLineCount();
+                for (int i = 0; i < numberOfLines; i++) {
+                    // Get each line and split it into separate opcode and operand
+                    try {
+                        String line = textArea.getText(textArea.getLineStartOffset(i), textArea.getLineEndOffset(i) - textArea.getLineStartOffset(i));
+                        String[] lineComponents = line.split(" +");
+
+                        // perform instruction lookup Mnemonic -> Byte
+                        compiledCode.add(Instruction.compileOpcode(lineComponents[0])); // opcode
+                        compiledCode.add(Instruction.compileOperand(lineComponents[1])); // operand
+                    }
+                    catch (BadLocationException badLocationException) {
+                        String line = "";
+                    }
+                }
+
+                // write code to memory
+                for (int i = 0; i < compiledCode.size(); i++) {
+                    vc.mm.write(i, compiledCode.get(i));
+                }
+            }
+        });
 
         // test code, tries to modify GUI
-        while (!vc.halted) {
+        while (true) {
             // update registers
             bw.registers.field1.setText(String.valueOf(vc.registers[0].read()));
             bw.registers.field2.setText(String.valueOf(vc.PC));
@@ -58,6 +107,16 @@ public class MainController {
                 }
             }
             model.fireTableDataChanged();
+        }
+    }
+
+    public static void startVirtualComputer(Thread vcThread) {
+        try {
+            vcThread.start(); // will call VirtualComputer.run()
+        }
+        catch (Exception e) {
+            System.out.println("Virtual Computer has crashed!");
+            e.printStackTrace();
         }
     }
 }

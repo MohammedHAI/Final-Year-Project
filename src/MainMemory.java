@@ -16,7 +16,7 @@ public class MainMemory {
         return data[index];
     }
 
-    public void write(byte index, byte value) {
+    public void write(int index, byte value) {
         data[index] = value;
     }
 
