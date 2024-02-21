@@ -18,7 +18,6 @@ import java.awt.*;
 // -
 public class MemoryViewer extends JComponent {
     public JTable table;
-    public DefaultTableModel model;
     private short[] data; // using short as byte is signed
 
     public MemoryViewer(byte[] memory) {
@@ -39,7 +38,7 @@ public class MemoryViewer extends JComponent {
         }*/
 
         // define components
-        model = new DefaultTableModel(data.length / 16, 17);
+        DefaultTableModel model = new DefaultTableModel(data.length / 16, 17);
         table = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(table);
         JPanel memoryPanel = new JPanel();

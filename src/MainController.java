@@ -7,11 +7,14 @@
 // and stitches it together with the GUI
 
 import javax.swing.*;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 
 public class MainController {
@@ -36,6 +39,35 @@ public class MainController {
         startVirtualComputer(vcThread);
 
         // test code, make run/stop and reset buttons work
+        addControlListeners(bw, vc);
+
+        // test code, set up file menu buttons
+        addFileMenuListeners(bw);
+
+        // test code, set up help menu buttons
+        addHelpMenuListeners(bw);
+
+        // test code, allows table modifications to update memory
+        DefaultTableModel model = getTableModel(bw, vc);
+
+        // test code, main loop that handles data transfer between GUI and VC
+        while (true) {
+            // update registers
+            bw.registers.field1.setText(String.valueOf(vc.registers[0].read()));
+            bw.registers.field2.setText(String.valueOf(vc.PC));
+            bw.registers.field3.setText(String.valueOf(vc.registers[1].read()));
+            bw.registers.field4.setText(String.valueOf(vc.SP));
+            bw.registers.field5.setText(String.valueOf(vc.registers[2].read()));
+            bw.registers.field6.setText(String.valueOf(vc.statusFlag));
+            bw.registers.field7.setText(String.valueOf(vc.registers[3].read()));
+            bw.registers.field8.setText(String.valueOf(vc.halted ? "Yes" : "No")); // show "Yes" if halted, otherwise "No"
+
+            updateTable(bw, vc);
+        }
+    }
+
+    // for bw.controls
+    public static void addControlListeners(BaseWindow bw, VirtualComputer vc) {
         bw.controls.runStopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -44,6 +76,8 @@ public class MainController {
                     Thread vcThread = new Thread(vc);
                     startVirtualComputer(vcThread);
                 }
+
+                // TODO: update button label
             }
         });
 
@@ -84,32 +118,97 @@ public class MainController {
                 }
             }
         });
+    }
 
-        // test code, tries to modify GUI
-        while (true) {
-            // update registers
-            bw.registers.field1.setText(String.valueOf(vc.registers[0].read()));
-            bw.registers.field2.setText(String.valueOf(vc.PC));
-            bw.registers.field3.setText(String.valueOf(vc.registers[1].read()));
-            bw.registers.field4.setText(String.valueOf(vc.SP));
-            bw.registers.field5.setText(String.valueOf(vc.registers[2].read()));
-            bw.registers.field6.setText(String.valueOf(vc.statusFlag));
-            bw.registers.field7.setText(String.valueOf(vc.registers[3].read()));
-            bw.registers.field8.setText(String.valueOf(vc.halted ? "Yes" : "No")); // show "Yes" if halted, otherwise "No"
+    // corresponds to the file menu items in ToolMenuBar
+    public static void addFileMenuListeners(BaseWindow bw) {
+        JMenuItem fileMenuItemNewProgram = (JMenuItem) bw.menu.fileMenu.getPopupMenu().getComponent(0);
+        JMenuItem fileMenuItemLoad = (JMenuItem) bw.menu.fileMenu.getPopupMenu().getComponent(1);
+        JMenuItem fileMenuItemSave = (JMenuItem) bw.menu.fileMenu.getPopupMenu().getComponent(2);
+        JMenuItem fileMenuItemExit = (JMenuItem) bw.menu.fileMenu.getPopupMenu().getComponent(4); // skip 3 as it is a Separator
 
-            // update memory, lazy
-            DefaultTableModel model = bw.viewer.model;
-            for (int i = 0; i < model.getRowCount(); i++) {
-                for (int j = 0; j < model.getColumnCount() - 1; j++) { // don't include address column
-                    if (i * 16 + j < vc.mm.size()) { // if index is not out of bounds of memory
-                        model.setValueAt(vc.mm.read(i * 16 + j), i, j + 1); // don't include address column
+        fileMenuItemNewProgram.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("New program clicked!");
+            }
+        });
+        fileMenuItemLoad.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Load clicked!");
+            }
+        });
+        fileMenuItemSave.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Save clicked");
+            }
+        });
+        fileMenuItemExit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+    }
+
+    // corresponds to the help menu items in ToolMenuBar
+    public static void addHelpMenuListeners(BaseWindow bw) {
+        JMenuItem helpMenuItemAbout = (JMenuItem) bw.menu.helpMenu.getPopupMenu().getComponent(0);
+
+        helpMenuItemAbout.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("About clicked!");
+            }
+        });
+    }
+
+    public static void updateTable(BaseWindow bw, VirtualComputer vc) {
+        DefaultTableModel model = (DefaultTableModel) bw.viewer.table.getModel();
+
+        // update table with memory, lazy implementation
+        // please don't freak out. all it does is update the table with a string representation of the bytes that have changed in memory
+        for (int i = 0; i < model.getRowCount(); i++) {
+            for (int j = 0; j < model.getColumnCount() - 1; j++) { // don't include address column
+                if (i * 16 + j < vc.mm.size()) { // if index is not out of bounds of memory
+                    if (vc.mm.read(i * 16 + j) != Byte.parseByte((String) model.getValueAt(i, j + 1))) {// If cell value does not match memory value
+                        model.setValueAt(String.valueOf(vc.mm.read(i * 16 + j)), i, j + 1); // write new value to table
                     }
                 }
             }
-            model.fireTableDataChanged();
         }
+        model.fireTableDataChanged();
     }
 
+    // adds listener for cell updates
+    private static DefaultTableModel getTableModel(BaseWindow bw, VirtualComputer vc) {
+        DefaultTableModel model = (DefaultTableModel) bw.viewer.table.getModel();
+
+        model.addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent e) {
+                int row = e.getFirstRow();
+                int column = e.getColumn();
+
+                // if a single cell has changed
+                if (column != TableModelEvent.ALL_COLUMNS) {
+                    System.out.println("Cell at row " + row + ", column " + column + " has changed: " + model.getValueAt(row, column));
+
+                    // adjust to account for address offset
+                    // TODO: is bugged because race condition causes canonical memory to be preferred over any user edits to cells
+                    if (row * 16 + column - 1 < vc.mm.size()) {
+                        vc.mm.write(row * 16 + column - 1, Byte.parseByte((String) model.getValueAt(row, column)));
+                    }
+                }
+            }
+        });
+
+        return model;
+    }
+
+    // Needed to restart the virtual computer
     public static void startVirtualComputer(Thread vcThread) {
         try {
             vcThread.start(); // will call VirtualComputer.run()

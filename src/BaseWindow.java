@@ -35,8 +35,8 @@ public class BaseWindow {
         registers = new RegisterPanel();
         output = new OutputArea();
 
-        JPanel mainPanel = new JPanel();
-        ToolMenuBar menu = new ToolMenuBar();
+        mainPanel = new JPanel();
+        menu = new ToolMenuBar();
 
         mainPanel.setLayout(new BorderLayout());
 

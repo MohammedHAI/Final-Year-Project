@@ -11,20 +11,19 @@ import java.awt.event.ActionListener;
 
 // Currently for testing
 public class ToolMenuBar extends JMenuBar {
-    public ToolMenuBar() {
-        // Create a menu bar and add it to the frame
-        JMenuBar menubar = new JMenuBar();
+    public JMenu fileMenu;
+    public JMenu helpMenu;
 
+    public ToolMenuBar() {
         // Add a "File" menu to the menu bar
-        JMenu fileMenu = new JMenu("File");
+        fileMenu = new JMenu("File");
         fileMenu.setMnemonic('F');
         add(fileMenu);
 
-        ActionListener fileActionListener = (ActionEvent e) -> System.out.println("File menu clicked!");
-        FileMenuItem fileMenuItemNewProgram = new FileMenuItem("New program", fileActionListener);
-        FileMenuItem fileMenuItemLoad = new FileMenuItem("Load...", fileActionListener);
-        FileMenuItem fileMenuItemSave = new FileMenuItem("Save...", fileActionListener);
-        FileMenuItem fileMenuItemExit = new FileMenuItem("Exit", (ActionEvent e) -> System.exit(0));
+        JMenuItem fileMenuItemNewProgram = new JMenuItem("New program");
+        JMenuItem fileMenuItemLoad = new JMenuItem("Load...");
+        JMenuItem fileMenuItemSave = new JMenuItem("Save...");
+        JMenuItem fileMenuItemExit = new JMenuItem("Exit");
 
         // Add "File" menu items to file menu
         fileMenu.add(fileMenuItemNewProgram);
@@ -33,16 +32,14 @@ public class ToolMenuBar extends JMenuBar {
         fileMenu.addSeparator();
         fileMenu.add(fileMenuItemExit);
 
-
         // Add a "Help" menu to the menu bar
-        JMenu helpMenu = new JMenu("Help");
+        helpMenu = new JMenu("Help");
         helpMenu.setMnemonic('H');
         add(helpMenu);
 
-        // Add "Help" menu items to help menu
-        ActionListener helpActionListener = (ActionEvent e) -> System.out.println("Help menu clicked!");
-        HelpMenuItem helpMenuItemAbout = new HelpMenuItem("About...", helpActionListener);
+        JMenuItem helpMenuItemAbout = new JMenuItem("About...");
 
+        // Add "Help" menu items to help menu
         helpMenu.add(helpMenuItemAbout);
     }
 }
