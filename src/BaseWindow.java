@@ -14,6 +14,7 @@ import java.nio.ByteOrder;
 // Has no functionality on its own as it is intended to be the main entry
 // point of the application
 public class BaseWindow {
+    public JFrame frame;
     public CodeEditor editor;
     public MemoryViewer viewer;
     public ControlPanel controls;
@@ -23,7 +24,7 @@ public class BaseWindow {
     public ToolMenuBar menu;
 
     public BaseWindow(byte[] memory) {
-        JFrame frame = new JFrame("Main Window");
+        frame = new JFrame("Main Window");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(1280, 720));
         frame.setLayout(new BorderLayout());

@@ -73,11 +73,9 @@ public class VirtualComputer implements Runnable {
 
             // decode and execute
             halted = currentInstruction.execute(mm, (byte) PC, registers);
+            PC = PC + 2;
 
-            if (!halted) {
-                PC = PC + 2;
-            }
-            else if (debug) {
+            if (debug) {
                 System.out.println("halted");
             }
         }

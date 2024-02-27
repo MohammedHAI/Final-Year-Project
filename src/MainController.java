@@ -11,11 +11,14 @@ import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.plaf.FileChooserUI;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.io.*;
 
 public class MainController {
     public static void main(String[] args) {
@@ -71,13 +74,13 @@ public class MainController {
         bw.controls.runStopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // TODO: update button label
+
                 vc.halted = !vc.halted;
                 if (!vc.halted) {
                     Thread vcThread = new Thread(vc);
                     startVirtualComputer(vcThread);
                 }
-
-                // TODO: update button label
             }
         });
 
@@ -137,12 +140,41 @@ public class MainController {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Load clicked!");
+
+                File selectedFile = chooseFile(bw.frame, false);
+                if (selectedFile == null) { return; }
+
+                try {
+                    BufferedReader is = new BufferedReader(new FileReader(selectedFile));
+                    String allLines = "";
+                    while (is.ready()) {
+                        allLines += is.readLine() + "\n";
+                        bw.editor.textArea.setText(allLines);
+                    }
+
+                }
+                catch (IOException ioException) {
+                    handleIOException(ioException, bw.frame, "Error loading file: " + ioException.getLocalizedMessage());
+                }
             }
         });
         fileMenuItemSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Save clicked");
+                System.out.println("Save clicked!");
+
+                File selectedFile = chooseFile(bw.frame, true);
+                if (selectedFile == null) { return; }
+
+                try {
+                    OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(selectedFile));
+                    os.write(bw.editor.textArea.getText());
+                    os.close();
+                }
+                catch (IOException ioException) {
+                    handleIOException(ioException, bw.frame, "Error opening file: " + ioException.getLocalizedMessage());
+                    System.out.println("Error writing a.txt: " + ioException.getLocalizedMessage());
+                }
             }
         });
         fileMenuItemExit.addActionListener(new ActionListener() {
@@ -151,6 +183,50 @@ public class MainController {
                 System.exit(0);
             }
         });
+    }
+
+    // opens a file dialog and returns the one chosen
+    public static File chooseFile(Frame frame, boolean save) {
+        JFileChooser fc = new JFileChooser();
+        fc.setCurrentDirectory(new File("."));
+        if (save) {
+            fc.setDialogType(JFileChooser.SAVE_DIALOG);
+            fc.setDialogTitle("Save program");
+            fc.setApproveButtonText("Save");
+        }
+        else {
+            fc.setDialogTitle("Load program");
+            fc.setApproveButtonText("Load");
+        }
+
+        if (fc.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            return fc.getSelectedFile();
+        }
+        else { // bad idea
+            return null;
+        }
+    }
+
+    // popup to be used to handle IOException
+    // needs frame and message
+    public static void handleIOException(IOException ioException, Frame frame, String errorMessage) {
+        JDialog errorDialog = new JDialog(frame, "Error", Dialog.ModalityType.APPLICATION_MODAL); // modality makes the application block
+        errorDialog.setSize(400, 200);
+        errorDialog.setLocationRelativeTo(null); // center the dialog
+
+        // add an "OK" button
+        JButton okButton = new JButton("OK");
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                errorDialog.dispose(); // Closes the dialog
+            }
+        });
+
+        // JLabel seems to get cut off
+        errorDialog.getContentPane().add(new JLabel(errorMessage), BorderLayout.CENTER);
+        errorDialog.getContentPane().add(okButton, BorderLayout.SOUTH);
+        errorDialog.setVisible(true);
     }
 
     // corresponds to the help menu items in ToolMenuBar
@@ -165,6 +241,7 @@ public class MainController {
         });
     }
 
+    // table reads all bytes from memory
     public static void updateTable(BaseWindow bw, VirtualComputer vc) {
         DefaultTableModel model = (DefaultTableModel) bw.viewer.table.getModel();
 
