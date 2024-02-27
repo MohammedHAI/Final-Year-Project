@@ -21,6 +21,7 @@ public class BaseWindow {
     public RegisterPanel registers;
     public OutputArea output;
     public JPanel mainPanel;
+    public JPanel viewerPanel;
     public ToolMenuBar menu;
 
     public BaseWindow(byte[] memory) {
@@ -28,6 +29,7 @@ public class BaseWindow {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(1280, 720));
         frame.setLayout(new BorderLayout());
+        frame.setResizable(false); // because GridBagLayout fails when resizing
 
         // defining components
         editor = new CodeEditor();
@@ -37,17 +39,39 @@ public class BaseWindow {
         output = new OutputArea();
 
         mainPanel = new JPanel();
+        viewerPanel = new JPanel();
         menu = new ToolMenuBar();
 
-        mainPanel.setLayout(new BorderLayout());
+        // setting up mainPanel
+        GridBagLayout gb = new GridBagLayout();
+        GridBagConstraints gbc = new GridBagConstraints();
+        mainPanel.setLayout(gb);
 
-        // adding components
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 40, 0);
+        mainPanel.add(controls, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        mainPanel.add(registers, gbc);
+
+        // setting up viewerPanel
+        viewerPanel.setLayout(gb);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        viewerPanel.add(viewer, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        viewerPanel.add(output, gbc);
+
+        // adding other components
+
         frame.add(editor, BorderLayout.WEST);
-        frame.add(viewer, BorderLayout.EAST);
-        mainPanel.add(controls, BorderLayout.NORTH);
-        mainPanel.add(registers, BorderLayout.SOUTH);
         frame.add(mainPanel, BorderLayout.CENTER);
-        frame.add(output, BorderLayout.SOUTH);
+        frame.add(viewerPanel, BorderLayout.EAST);
         frame.setJMenuBar(menu);
 
         // temp, test connecting to backend

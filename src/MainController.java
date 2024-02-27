@@ -274,7 +274,7 @@ public class MainController {
                     System.out.println("Cell at row " + row + ", column " + column + " has changed: " + model.getValueAt(row, column));
 
                     // adjust to account for address offset
-                    // TODO: is bugged because race condition causes canonical memory to be preferred over any user edits to cells
+                    // TODO: is bugged because race condition causes canonical memory to be preferred over any user edits to cells. also empty cell edit causes crash!
                     if (row * 16 + column - 1 < vc.mm.size()) {
                         vc.mm.write(row * 16 + column - 1, Byte.parseByte((String) model.getValueAt(row, column)));
                     }

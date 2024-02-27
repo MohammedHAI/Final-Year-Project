@@ -21,6 +21,7 @@ public class OutputArea extends JComponent {
         // define components
         JScrollPane scrollPane = new JScrollPane();
         JTextArea textArea = new JTextArea();
+        textArea.setEditable(false);
         textArea.setLineWrap(true);
         JButton clearButton = new JButton("Clear");
 

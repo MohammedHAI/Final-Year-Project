@@ -6,6 +6,7 @@
 package components;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 
 // Implements the register panel component based on the design in the report
@@ -65,6 +66,7 @@ public class RegisterPanel extends JComponent {
 
         // adding components
         for (int i = 0; i < NUMREGISTERS; i++) {
+            labels[i].setBorder(new LineBorder(Color.BLACK));
             add(labels[i]);
             add(textFields[i]);
         }

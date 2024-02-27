@@ -34,13 +34,12 @@ public class ControlPanel extends JComponent {
 
         // modify components
         panel.setLayout(new GridLayout(2, 2));
-        //compileButton.setMargin(new Insets(0, 0, 30, 30));
 
         // add components
         panel.add(runStopButton);
+        panel.add(resetButton);
         panel.add(stepForwardsButton);
         panel.add(stepBackwardsButton);
-        panel.add(resetButton);
         add(panel);
     }
 }
