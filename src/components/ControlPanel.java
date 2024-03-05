@@ -38,8 +38,8 @@ public class ControlPanel extends JComponent {
         // add components
         panel.add(runStopButton);
         panel.add(resetButton);
-        panel.add(stepForwardsButton);
         panel.add(stepBackwardsButton);
+        panel.add(stepForwardsButton);
         add(panel);
     }
 }

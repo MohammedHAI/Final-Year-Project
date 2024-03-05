@@ -41,8 +41,20 @@ public class MainController {
         BaseWindow bw = new BaseWindow(vc.mm.getData(16));
         startVirtualComputer(vcThread);
 
+        // controls all timing for GUI and virtual computer
+        Timer t = new Timer((1 / vc.clockSpeed) * 1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // call any update methods here
+                synchronized (vc) {
+                    vc.notify();
+                    updateTable(bw, vc);
+                }
+            }
+        });
+
         // test code, make run/stop and reset buttons work
-        addControlListeners(bw, vc);
+        addControlListeners(bw, vc, t);
 
         // test code, set up file menu buttons
         addFileMenuListeners(bw);
@@ -55,38 +67,32 @@ public class MainController {
 
         // test code, main loop that handles data transfer between GUI and VC
         while (true) {
-            // update registers
-            bw.registers.field1.setText(String.valueOf(vc.registers[0].read()));
-            bw.registers.field2.setText(String.valueOf(vc.PC));
-            bw.registers.field3.setText(String.valueOf(vc.registers[1].read()));
-            bw.registers.field4.setText(String.valueOf(vc.SP));
-            bw.registers.field5.setText(String.valueOf(vc.registers[2].read()));
-            bw.registers.field6.setText(String.valueOf(vc.statusFlag));
-            bw.registers.field7.setText(String.valueOf(vc.registers[3].read()));
-            bw.registers.field8.setText(String.valueOf(vc.halted ? "Yes" : "No")); // show "Yes" if halted, otherwise "No"
-
+            updateRegisters(bw, vc);
             updateTable(bw, vc);
         }
     }
 
     // for bw.controls
-    public static void addControlListeners(BaseWindow bw, VirtualComputer vc) {
+    public static void addControlListeners(BaseWindow bw, VirtualComputer vc, Timer t) {
         bw.controls.runStopButton.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent e) { // controls thread state in order to simulate halting
                 // TODO: update button label
 
                 vc.halted = !vc.halted;
-                if (!vc.halted) {
-                    Thread vcThread = new Thread(vc);
-                    startVirtualComputer(vcThread);
+                if (vc.halted) {
+                    t.stop();
+                }
+                else {
+                    t.start();
                 }
             }
         });
 
-        bw.controls.resetButton.addActionListener(new ActionListener() {
+        bw.controls.resetButton.addActionListener(new ActionListener() { // TODO: make VC stop when it has reset
             @Override
             public void actionPerformed(ActionEvent e) {
+                t.stop();
                 vc.reset();
             }
         });
@@ -239,6 +245,17 @@ public class MainController {
                 System.out.println("About clicked!");
             }
         });
+    }
+
+    public static void updateRegisters(BaseWindow bw, VirtualComputer vc) {
+        bw.registers.field1.setText(String.valueOf(vc.registers[0].read()));
+        bw.registers.field2.setText(String.valueOf(vc.PC));
+        bw.registers.field3.setText(String.valueOf(vc.registers[1].read()));
+        bw.registers.field4.setText(String.valueOf(vc.SP));
+        bw.registers.field5.setText(String.valueOf(vc.registers[2].read()));
+        bw.registers.field6.setText(String.valueOf(vc.statusFlag));
+        bw.registers.field7.setText(String.valueOf(vc.registers[3].read()));
+        bw.registers.field8.setText(vc.halted ? "Yes" : "No"); // show "Yes" if halted, otherwise "No"
     }
 
     // table reads all bytes from memory

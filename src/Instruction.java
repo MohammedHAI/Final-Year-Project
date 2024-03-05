@@ -54,7 +54,7 @@ public class Instruction {
         mnemonicLookup.put("HLT", Mnemonics.HLT);
     }
 
-    public boolean execute(MainMemory mm, byte PC, Register[] registers) {
+    public boolean execute(MainMemory mm, int PC, Register[] registers) {
         switch (opcode) {
             case Mnemonics.NOP:
                 break;

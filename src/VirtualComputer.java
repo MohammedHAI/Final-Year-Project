@@ -24,7 +24,7 @@ public class VirtualComputer implements Runnable {
     public int statusFlag;
     public int PC;
     public int SP;
-    public double clockSpeed;
+    public int clockSpeed;
     public boolean halted;
     private boolean debug;
 
@@ -41,43 +41,51 @@ public class VirtualComputer implements Runnable {
         PC = 0;
         SP = 0;
         this.clockSpeed = clockSpeed;
-        halted = false;
+        halted = true;
     }
 
     // Don't call directly if debug output needed
     @Override
     public void run() {
-        while (!halted) {
-            try {
-                Thread.sleep((long) ((1 / clockSpeed) * 1000)); // multiply by 1000 because Thread.sleep takes milliseconds
-            }
-            catch (InterruptedException e) {
-                System.out.println("CPU interrupted");
-                return;
-            }
-
-            // fetch
-            Instruction currentInstruction = new Instruction(mm.read((byte) PC), mm.read((byte) (PC + 1)));
-
-            // debug output
-            if (debug) {
-                System.out.println(currentInstruction);
-                System.out.println(mm);
-
-                for (int i = 0; i < NUMBEROFREGISTERS; i++) {
-                    System.out.println(registers[i]);
+        while (true) { // halting is now handled by timer in MainController
+            synchronized (this) {
+                try {
+                    wait(); // requires timer to allow it to continue
+                } catch (InterruptedException interruptedException) {
+                    System.out.println("CPU interrupted");
                 }
-
-                System.out.println();
             }
 
-            // decode and execute
-            halted = currentInstruction.execute(mm, (byte) PC, registers);
-            PC = PC + 2;
+            step();
 
-            if (debug) {
+            if (debug && halted) {
                 System.out.println("halted");
             }
+        }
+    }
+
+    // executes one instruction cycle
+    public void step() {
+        // fetch
+        Instruction currentInstruction = new Instruction(mm.read(PC), mm.read(PC + 1));
+
+        // debug output
+        if (debug) {
+            System.out.println(currentInstruction);
+            System.out.println(mm);
+
+            for (int i = 0; i < NUMBEROFREGISTERS; i++) {
+                System.out.println(registers[i]);
+            }
+
+            System.out.println();
+        }
+
+        // decode and execute
+        halted = currentInstruction.execute(mm, PC, registers);
+        if (!halted) {
+            statusFlag &= ~(0b00000001); // clear reset bit (mask NOT reset)
+            PC = PC + 2;
         }
     }
 
@@ -93,7 +101,7 @@ public class VirtualComputer implements Runnable {
         registers[2].write((byte) 0);
         registers[3].write((byte) 0);
 
-        statusFlag = 0;
+        statusFlag |= 0b00000001; // set reset bit
         PC = 0;
         SP = 0;
         halted = true;

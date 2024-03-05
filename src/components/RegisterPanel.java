@@ -34,7 +34,7 @@ public class RegisterPanel extends JComponent {
     public JTextField field5 = new JTextField("0");
     public JTextField field6 = new JTextField("0");
     public JTextField field7 = new JTextField("0");
-    public JTextField field8 = new JTextField("No");
+    public JTextField field8 = new JTextField("Yes");
 
     // all text data initialised here
     public RegisterPanel() {
