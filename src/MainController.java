@@ -24,6 +24,7 @@ public class MainController {
     public static void main(String[] args) {
         VirtualComputer vc = new VirtualComputer(1);
         Thread vcThread = new Thread(vc);
+        Instruction.setupLookups();
 
         // program data
         byte[] data = new byte[] {0x02, 0x01,
@@ -55,6 +56,9 @@ public class MainController {
 
         // test code, make run/stop and reset buttons work
         addControlListeners(bw, vc, t);
+
+        // test code, make memory viewer buttons work
+        addViewerListeners(bw, vc);
 
         // test code, set up file menu buttons
         addFileMenuListeners(bw);
@@ -112,12 +116,20 @@ public class MainController {
                         String line = textArea.getText(textArea.getLineStartOffset(i), textArea.getLineEndOffset(i) - textArea.getLineStartOffset(i));
                         String[] lineComponents = line.split(" +");
 
+                        // preprocessing before attempting to compile
+
                         // perform instruction lookup Mnemonic -> Byte
                         compiledCode.add(Instruction.compileOpcode(lineComponents[0])); // opcode
-                        compiledCode.add(Instruction.compileOperand(lineComponents[1])); // operand
+
+                        if (lineComponents.length < 2) { // no operand
+                            compiledCode.add(Instruction.compileOperand("0")); // default value
+                        }
+                        else {
+                            compiledCode.add(Instruction.compileOperand(lineComponents[1])); // operand
+                        }
                     }
                     catch (BadLocationException badLocationException) {
-                        String line = "";
+                        System.out.println("Unable to extract lines from program: " + badLocationException.getLocalizedMessage());
                     }
                 }
 
@@ -125,6 +137,96 @@ public class MainController {
                 for (int i = 0; i < compiledCode.size(); i++) {
                     vc.mm.write(i, compiledCode.get(i));
                 }
+            }
+        });
+    }
+
+    // for bw.viewer
+    public static void addViewerListeners(BaseWindow bw, VirtualComputer vc) {
+        bw.viewer.goToButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // test code
+                JDialog d = new JDialog(bw.frame);
+                d.setSize(new Dimension(300, 200));
+                d.setLocationRelativeTo(null);
+                d.add(new JLabel("Temp"));
+                d.setVisible(true);
+            }
+        });
+
+        bw.viewer.numberSystemButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // test code
+                JDialog d = new JDialog(bw.frame);
+                d.setSize(new Dimension(300, 200));
+                d.setLocationRelativeTo(null);
+                d.add(new JLabel("Temp"));
+                d.setVisible(true);
+            }
+        });
+
+        bw.viewer.decompileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // test code
+                JDialog confirmDialog = new JDialog(bw.frame, "Confirm decompilation");
+                JTextArea text = new JTextArea("Decompilation will overwrite your current program with the one from memory.\n\nAre you sure you want to do this?");
+                JPanel buttonPanel = new JPanel();
+                JButton noButton = new JButton("No");
+                JButton yesButton = new JButton("Yes");
+                confirmDialog.setSize(new Dimension(300, 200));
+                confirmDialog.setLocationRelativeTo(null);
+
+                text.setLineWrap(true);
+                buttonPanel.setLayout(new FlowLayout());
+                noButton.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        confirmDialog.dispose(); // close immediately
+                    }
+                });
+
+                yesButton.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        // perform the action before closing
+                        JTextArea code = bw.editor.textArea;
+                        code.setText(""); // clear the current code
+
+                        // this performs the translation from bytes to mnemonics
+                        int i = 0;
+                        String nextByte;
+                        String nextOpcode;
+                        String nextOperand;
+                        boolean finished = false;
+                        while (!finished) {
+                            nextByte = (String) bw.viewer.table.getValueAt(i / 16, (i % 16) + 1); // add one to columns because the first one is the address offset
+                            nextOpcode = Instruction.decompileOpcode(nextByte); // need as string
+                            nextOperand = (String) bw.viewer.table.getValueAt((i + 1) / 16, ((i + 1) % 16) + 1);
+
+                            if (nextOpcode.equals("NOP")) {
+                                finished = true;
+                            }
+
+                            if (!finished) {
+                                code.append(nextOpcode + " ");
+                                code.append(nextOperand + "\n");
+                                i += 2; // jump by opcodes
+                            }
+
+                        }
+
+                        confirmDialog.dispose();
+                    }
+                });
+
+                confirmDialog.add(text, BorderLayout.CENTER);
+                buttonPanel.add(noButton);
+                buttonPanel.add(yesButton);
+                confirmDialog.add(buttonPanel, BorderLayout.SOUTH);
+                confirmDialog.setVisible(true);
             }
         });
     }

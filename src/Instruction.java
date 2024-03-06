@@ -33,25 +33,11 @@ public class Instruction {
     final private byte opcode;
     final private byte operand;
     final private static HashMap<String, Byte> mnemonicLookup = new HashMap<>();
+    final private static HashMap<Byte, String> byteLookup = new HashMap<>();
 
     public Instruction(byte opcode, byte operand) {
         this.opcode = opcode;
         this.operand = operand;
-
-        mnemonicLookup.put("NOP", Mnemonics.NOP);
-        mnemonicLookup.put("LDR", Mnemonics.LDR);
-        mnemonicLookup.put("LDIA",Mnemonics.LDIA);
-        mnemonicLookup.put("LDIB", Mnemonics.LDIB);
-        mnemonicLookup.put("LDIC", Mnemonics.LDIC);
-        mnemonicLookup.put("LDID", Mnemonics.LDID);
-        mnemonicLookup.put("LDAB", Mnemonics.LDAB);
-        mnemonicLookup.put("STR", Mnemonics.STR);
-        mnemonicLookup.put("STI", Mnemonics.STI);
-        mnemonicLookup.put("STAA", Mnemonics.STAA);
-        mnemonicLookup.put("STAC", Mnemonics.STAC);
-        mnemonicLookup.put("ADRC", Mnemonics.ADRC);
-        mnemonicLookup.put("SUR", Mnemonics.SUR);
-        mnemonicLookup.put("HLT", Mnemonics.HLT);
     }
 
     public boolean execute(MainMemory mm, int PC, Register[] registers) {
@@ -93,14 +79,53 @@ public class Instruction {
         return false;
     }
 
+    // makes sure the hashmaps are accessible even outside an instance
+    public static void setupLookups() {
+        mnemonicLookup.put("NOP", Mnemonics.NOP);
+        mnemonicLookup.put("LDR", Mnemonics.LDR);
+        mnemonicLookup.put("LDIA",Mnemonics.LDIA);
+        mnemonicLookup.put("LDIB", Mnemonics.LDIB);
+        mnemonicLookup.put("LDIC", Mnemonics.LDIC);
+        mnemonicLookup.put("LDID", Mnemonics.LDID);
+        mnemonicLookup.put("LDAB", Mnemonics.LDAB);
+        mnemonicLookup.put("STR", Mnemonics.STR);
+        mnemonicLookup.put("STI", Mnemonics.STI);
+        mnemonicLookup.put("STAA", Mnemonics.STAA);
+        mnemonicLookup.put("STAC", Mnemonics.STAC);
+        mnemonicLookup.put("ADRC", Mnemonics.ADRC);
+        mnemonicLookup.put("SUR", Mnemonics.SUR);
+        mnemonicLookup.put("HLT", Mnemonics.HLT);
+
+        // reverse lookup for decompiling, not very efficient
+        byteLookup.put (Mnemonics.NOP, "NOP");
+        byteLookup.put (Mnemonics.LDR, "LDR");
+        byteLookup.put(Mnemonics.LDIA, "LDIA");
+        byteLookup.put(Mnemonics.LDIB, "LDIB");
+        byteLookup.put(Mnemonics.LDIC, "LDIC");
+        byteLookup.put(Mnemonics.LDID, "LDID");
+        byteLookup.put(Mnemonics.LDAB, "LDAB");
+        byteLookup.put(Mnemonics.STR, "STR");
+        byteLookup.put(Mnemonics.STI, "STI");
+        byteLookup.put(Mnemonics.STAA, "STAA");
+        byteLookup.put(Mnemonics.STAC, "STAC");
+        byteLookup.put(Mnemonics.ADRC, "ADRC");
+        byteLookup.put(Mnemonics.SUR, "SUR");
+        byteLookup.put(Mnemonics.HLT, "HLT");
+    }
+
     // Get an instruction as a byte when given its corresponding assembly mnemonic
     public static byte compileOpcode(String mnemonic) {
-        return mnemonicLookup.getOrDefault(mnemonic, (byte) 0);
+        return mnemonicLookup.getOrDefault(mnemonic, (byte) 0); // NOP if instruction unknown
     }
 
     // Get an operand as a byte
     public static byte compileOperand(String data) {
         return Byte.parseByte(data.strip());
+    }
+
+    // Get the mnemonic for a byte, if it exists
+    public static String decompileOpcode(String opcode) {
+        return byteLookup.getOrDefault(Byte.parseByte(opcode), "NOP"); // NOP if instruction unknown
     }
 
     @Override

@@ -18,32 +18,29 @@ import java.awt.*;
 // -
 public class MemoryViewer extends JComponent {
     public JTable table;
-    private short[] data; // using short as byte is signed
+    public JButton goToButton;
+    public JButton numberSystemButton;
+    public JButton decompileButton;
+    private int[] data; // using short as byte is signed
 
     public MemoryViewer(byte[] memory) {
         setLayout(new BorderLayout());
 
         // initialise data
-        data = new short[256 * 3];
+        data = new int[256 * 3];
 
         for (int i = 0; i < memory.length; i++) {
             data[i] = memory[i];
         }
-
-        // placeholder data
-        /*for (int i =  0; i < 3; i++) {
-            for (int j = 0; j < 256; j++) {
-                data[j + (i * 256)] = (short) j;
-            }
-        }*/
 
         // define components
         DefaultTableModel model = new DefaultTableModel(data.length / 16, 17);
         table = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(table);
         JPanel memoryPanel = new JPanel();
-        JButton goToButton = new JButton("Go to address...");
-        JButton numberSystemButton = new JButton("Change number system");
+        goToButton = new JButton("Go to address...");
+        numberSystemButton = new JButton("Change number system");
+        decompileButton = new JButton("Decompile");
 
         // modify components
         // define column headers
@@ -90,6 +87,7 @@ public class MemoryViewer extends JComponent {
         memoryPanel.add(scrollPane);
         memoryPanel.add(goToButton);
         memoryPanel.add(numberSystemButton);
+        memoryPanel.add(decompileButton);
         add(memoryPanel);
     }
 }
