@@ -3,10 +3,12 @@
     Date created:: 07/12/2023
  */
 
+import components.OutputBuffer;
+
 public class TestModel {
 
     public static void main(String[] args) {
-        VirtualComputer vc = new VirtualComputer(1); // 1 Hz
+        VirtualComputer vc = new VirtualComputer(1, new OutputBuffer()); // 1 Hz, buffer is dummy
 
         // program does the following:
         //

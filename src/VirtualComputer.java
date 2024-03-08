@@ -15,12 +15,15 @@
 
 // instructions defined in Instruction.java
 
+import components.OutputBuffer;
+
 public class VirtualComputer implements Runnable {
     private final int MEMORYSIZE = 256;
     private final int NUMBEROFREGISTERS = 4;
 
     public MainMemory mm;
     public Register[] registers;
+    private OutputBuffer buffer;
     public int statusFlag;
     public int PC;
     public int SP;
@@ -28,8 +31,9 @@ public class VirtualComputer implements Runnable {
     public boolean halted;
     private boolean debug;
 
-    public VirtualComputer(int clockSpeed) {
+    public VirtualComputer(int clockSpeed, OutputBuffer buffer) {
         mm = new MainMemory(MEMORYSIZE);
+        this.buffer = buffer;
 
         registers = new Register[NUMBEROFREGISTERS];
         registers[0] = new Register("Register A");
@@ -84,8 +88,16 @@ public class VirtualComputer implements Runnable {
         // decode and execute
         halted = currentInstruction.execute(mm, PC, registers);
         if (!halted) {
+            synchronized (this) {
+                buffer.setMessage(currentInstruction.toString() + "\n");
+            }
             statusFlag &= ~(0b00000001); // clear reset bit (mask NOT reset)
             PC = PC + 2;
+        }
+        else {
+            synchronized (this) {
+                buffer.setMessage("Halted.\n");
+            }
         }
     }
 

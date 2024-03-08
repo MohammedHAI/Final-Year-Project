@@ -6,6 +6,8 @@
 // This class actually runs the virtual computer
 // and stitches it together with the GUI
 
+import components.OutputBuffer;
+
 import javax.swing.*;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
@@ -17,12 +19,15 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.io.*;
 
 public class MainController {
     public static void main(String[] args) {
-        VirtualComputer vc = new VirtualComputer(1);
+        OutputBuffer buffer = new OutputBuffer();
+        VirtualComputer vc = new VirtualComputer(1, buffer);
         Thread vcThread = new Thread(vc);
         Instruction.setupLookups();
 
@@ -57,8 +62,11 @@ public class MainController {
         // test code, make run/stop and reset buttons work
         addControlListeners(bw, vc, t);
 
-        // test code, make memory viewer buttons work
+        // test code, make memory viewer buttons work, make table tooltip work
         addViewerListeners(bw, vc);
+
+        // test code, makes output clear button work
+        addOutputListeners(bw);
 
         // test code, set up file menu buttons
         addFileMenuListeners(bw);
@@ -73,6 +81,9 @@ public class MainController {
         while (true) {
             updateRegisters(bw, vc);
             updateTable(bw, vc);
+            synchronized (vc) {
+                bw.output.textArea.append(buffer.getMessage());
+            }
         }
     }
 
@@ -227,6 +238,34 @@ public class MainController {
                 buttonPanel.add(yesButton);
                 confirmDialog.add(buttonPanel, BorderLayout.SOUTH);
                 confirmDialog.setVisible(true);
+            }
+        });
+
+        // decodes the instruction on mouse hover
+        JTable table = bw.viewer.table;
+        table.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                super.mouseMoved(e);
+                int row = table.rowAtPoint(e.getPoint());
+                int column = table.columnAtPoint(e.getPoint());
+
+                if (row >= 0 && column >= 1) { // adds tooltip
+                    table.setToolTipText(Instruction.decompileOpcode((String) table.getValueAt(row, column)));
+                }
+                else { // removes tooltip
+                    table.setToolTipText(null);
+                }
+            }
+        });
+    }
+
+    // for bw.output
+    public static void addOutputListeners(BaseWindow bw) {
+        bw.output.clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                bw.output.textArea.setText("");
             }
         });
     }

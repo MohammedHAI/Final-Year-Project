@@ -130,6 +130,6 @@ public class Instruction {
 
     @Override
     public String toString() {
-        return "Opcode: " + opcode + ", Operand: " + operand;
+        return "Opcode: " + byteLookup.getOrDefault(opcode, "Unknown") + ", Operand: " + operand;
     }
 }

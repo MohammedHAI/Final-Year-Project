@@ -15,15 +15,20 @@ import java.awt.*;
 // - JScrollPane
 // - JButton
 public class OutputArea extends JComponent {
+    public JTextArea textArea;
+    public JButton clearButton;
+
     public OutputArea() {
         setLayout(new BorderLayout());
 
         // define components
         JScrollPane scrollPane = new JScrollPane();
-        JTextArea textArea = new JTextArea();
+        textArea = new JTextArea();
         textArea.setEditable(false);
         textArea.setLineWrap(true);
-        JButton clearButton = new JButton("Clear");
+        clearButton = new JButton("Clear");
+
+        scrollPane.setPreferredSize(new Dimension(600, 100)); // very important!
 
         // add components
         scrollPane.setViewportView(textArea);
