@@ -10,6 +10,7 @@ package components;
 public class OutputBuffer {
     private String oldMessage = "";
     private String newMessage = "";
+    private boolean locked;
 
     // internal
     private boolean hasNewMessage() {
@@ -18,7 +19,7 @@ public class OutputBuffer {
 
     // meant for MainController
     public String getMessage() {
-        if (hasNewMessage()) {
+        if (hasNewMessage() && !locked) {
             oldMessage = newMessage;
             return newMessage;
         }
@@ -29,6 +30,12 @@ public class OutputBuffer {
 
     // meant for VirtualComputer
     public void setMessage(String newMessage) {
-        this.newMessage = newMessage;
+        if (!locked) {
+            this.newMessage = newMessage;
+        }
     }
+
+    // necessary to prevent overwriting
+    public void lockMessage() { locked = true;}
+    public void unlockMessage() { locked = false; }
 }

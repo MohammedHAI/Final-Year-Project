@@ -3,6 +3,8 @@
     Date created:: 07/12/2023
  */
 
+import components.OutputBuffer;
+
 import java.util.HashMap;
 
 // should really use an enum instead
@@ -21,6 +23,8 @@ class Mnemonics {
     final static byte STAC = 10; // STore from Register C into Address
     final static byte ADRC = 11; // ADd two Register values and store in C
     final static byte SUR = 12;  // SUbtract two Register values
+    final static byte OUTC = 50; // OUTput a Character to the screen
+    final static byte OUTS = 51; // OUTput a String to the screen
     final static byte HLT = -1;  // HaLT
 }
 
@@ -40,7 +44,7 @@ public class Instruction {
         this.operand = operand;
     }
 
-    public boolean execute(MainMemory mm, int PC, Register[] registers) {
+    public boolean execute(MainMemory mm, int PC, Register[] registers, OutputBuffer buffer) {
         switch (opcode) {
             case Mnemonics.NOP:
                 break;
@@ -69,6 +73,29 @@ public class Instruction {
                 registers[1].write(mm.read(operand));
             break;
 
+            case Mnemonics.OUTC:
+                buffer.setMessage(new String(Character.toChars(operand))); // get unicode representation of operand
+                buffer.lockMessage();
+            break;
+
+            case Mnemonics.OUTS:
+                StringBuilder sb = new StringBuilder();
+                byte next = operand; // address of start of string
+                byte character = mm.read(next);
+                while (character != 0) { // null terminator
+                    if (character == 0x0D || character == 0x0A) { // newline characters must be handled differently
+                        sb.append("\n");
+                    }
+                    else {
+                        sb.append(Character.toChars(mm.read(next)));
+                    }
+                    next += 1;
+                    character = mm.read(next);
+                }
+                buffer.setMessage(sb.toString());
+                buffer.lockMessage();
+            break;
+
             case Mnemonics.HLT:
                 return true;
 
@@ -94,6 +121,8 @@ public class Instruction {
         mnemonicLookup.put("STAC", Mnemonics.STAC);
         mnemonicLookup.put("ADRC", Mnemonics.ADRC);
         mnemonicLookup.put("SUR", Mnemonics.SUR);
+        mnemonicLookup.put("OUTC", Mnemonics.OUTC);
+        mnemonicLookup.put("OUTS", Mnemonics.OUTS);
         mnemonicLookup.put("HLT", Mnemonics.HLT);
 
         // reverse lookup for decompiling, not very efficient
@@ -110,6 +139,8 @@ public class Instruction {
         byteLookup.put(Mnemonics.STAC, "STAC");
         byteLookup.put(Mnemonics.ADRC, "ADRC");
         byteLookup.put(Mnemonics.SUR, "SUR");
+        byteLookup.put(Mnemonics.OUTC, "OUTC");
+        byteLookup.put(Mnemonics.OUTS, "OUTS");
         byteLookup.put(Mnemonics.HLT, "HLT");
     }
 
@@ -125,7 +156,7 @@ public class Instruction {
 
     // Get the mnemonic for a byte, if it exists
     public static String decompileOpcode(String opcode) {
-        return byteLookup.getOrDefault(Byte.parseByte(opcode), "NOP"); // NOP if instruction unknown
+        return byteLookup.getOrDefault(Byte.parseByte(opcode), "Unknown"); // NOP if instruction unknown
     }
 
     @Override

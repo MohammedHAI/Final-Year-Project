@@ -29,7 +29,7 @@ public class VirtualComputer implements Runnable {
     public int SP;
     public int clockSpeed;
     public boolean halted;
-    private boolean debug;
+    public boolean debug;
 
     public VirtualComputer(int clockSpeed, OutputBuffer buffer) {
         mm = new MainMemory(MEMORYSIZE);
@@ -46,6 +46,7 @@ public class VirtualComputer implements Runnable {
         SP = 0;
         this.clockSpeed = clockSpeed;
         halted = true;
+        debug = true;
     }
 
     // Don't call directly if debug output needed
@@ -86,10 +87,11 @@ public class VirtualComputer implements Runnable {
         }
 
         // decode and execute
-        halted = currentInstruction.execute(mm, PC, registers);
+        halted = currentInstruction.execute(mm, PC, registers, buffer);
         if (!halted) {
             synchronized (this) {
                 buffer.setMessage(currentInstruction.toString() + "\n");
+                buffer.unlockMessage();
             }
             statusFlag &= ~(0b00000001); // clear reset bit (mask NOT reset)
             PC = PC + 2;

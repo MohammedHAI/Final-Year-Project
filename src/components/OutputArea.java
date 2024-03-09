@@ -17,6 +17,7 @@ import java.awt.*;
 public class OutputArea extends JComponent {
     public JTextArea textArea;
     public JButton clearButton;
+    public JButton debugButton;
 
     public OutputArea() {
         setLayout(new BorderLayout());
@@ -26,13 +27,18 @@ public class OutputArea extends JComponent {
         textArea = new JTextArea();
         textArea.setEditable(false);
         textArea.setLineWrap(true);
+        JPanel buttonPanel = new JPanel();
         clearButton = new JButton("Clear");
+        debugButton = new JButton("Toggle Debug Output");
 
+        textArea.setFont(new Font("Serif", Font.PLAIN, 14));
         scrollPane.setPreferredSize(new Dimension(600, 100)); // very important!
 
         // add components
         scrollPane.setViewportView(textArea);
         add(scrollPane, BorderLayout.NORTH);
-        add(clearButton, BorderLayout.SOUTH);
+        buttonPanel.add(clearButton);
+        buttonPanel.add(debugButton);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 }

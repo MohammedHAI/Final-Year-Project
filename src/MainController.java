@@ -66,7 +66,7 @@ public class MainController {
         addViewerListeners(bw, vc);
 
         // test code, makes output clear button work
-        addOutputListeners(bw);
+        addOutputListeners(bw, vc);
 
         // test code, set up file menu buttons
         addFileMenuListeners(bw);
@@ -82,7 +82,9 @@ public class MainController {
             updateRegisters(bw, vc);
             updateTable(bw, vc);
             synchronized (vc) {
-                bw.output.textArea.append(buffer.getMessage());
+                if (vc.debug) {
+                    bw.output.textArea.append(buffer.getMessage());
+                }
             }
         }
     }
@@ -147,6 +149,18 @@ public class MainController {
                 // write code to memory
                 for (int i = 0; i < compiledCode.size(); i++) {
                     vc.mm.write(i, compiledCode.get(i));
+                }
+            }
+        });
+
+        bw.controls.stepForwardsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // should successfully override the Virtual Computer halted state
+                synchronized (vc) {
+                    vc.step();
+                    vc.halted = true;
+                    t.stop();
                 }
             }
         });
@@ -217,13 +231,16 @@ public class MainController {
                             nextOpcode = Instruction.decompileOpcode(nextByte); // need as string
                             nextOperand = (String) bw.viewer.table.getValueAt((i + 1) / 16, ((i + 1) % 16) + 1);
 
-                            if (nextOpcode.equals("NOP")) {
+                            if (nextOpcode.equals("NOP") || nextOpcode.equals("Unknown")) {
                                 finished = true;
+                            }
+                            else { // not finished
+                                code.append("\n");
                             }
 
                             if (!finished) {
                                 code.append(nextOpcode + " ");
-                                code.append(nextOperand + "\n");
+                                code.append(nextOperand);
                                 i += 2; // jump by opcodes
                             }
 
@@ -261,11 +278,20 @@ public class MainController {
     }
 
     // for bw.output
-    public static void addOutputListeners(BaseWindow bw) {
+    public static void addOutputListeners(BaseWindow bw, VirtualComputer vc) {
         bw.output.clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 bw.output.textArea.setText("");
+            }
+        });
+
+        bw.output.debugButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                synchronized (vc) {
+                    vc.debug = !vc.debug;
+                }
             }
         });
     }
@@ -335,7 +361,7 @@ public class MainController {
     // opens a file dialog and returns the one chosen
     public static File chooseFile(Frame frame, boolean save) {
         JFileChooser fc = new JFileChooser();
-        fc.setCurrentDirectory(new File("."));
+        //fc.setCurrentDirectory(new File("."));
         if (save) {
             fc.setDialogType(JFileChooser.SAVE_DIALOG);
             fc.setDialogTitle("Save program");
