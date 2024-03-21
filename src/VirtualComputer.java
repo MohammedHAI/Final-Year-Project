@@ -87,7 +87,7 @@ public class VirtualComputer implements Runnable {
         }
 
         // decode and execute
-        halted = currentInstruction.execute(mm, PC, registers, buffer);
+        halted = currentInstruction.execute(mm, statusFlag, PC, SP, registers, buffer);
         if (!halted) {
             synchronized (this) {
                 buffer.setMessage(currentInstruction.toString() + "\n");
@@ -110,10 +110,10 @@ public class VirtualComputer implements Runnable {
     }
 
     public void reset() {
-        registers[0].write((byte) 0);
-        registers[1].write((byte) 0);
-        registers[2].write((byte) 0);
-        registers[3].write((byte) 0);
+        registers[0].write((short) 0);
+        registers[1].write((short) 0);
+        registers[2].write((short) 0);
+        registers[3].write((short) 0);
 
         statusFlag |= 0b00000001; // set reset bit
         PC = 0;

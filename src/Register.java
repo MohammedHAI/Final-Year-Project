@@ -7,18 +7,18 @@
 
 public class Register {
     private final String name;
-    private byte data;
+    private short data;
 
     public Register(String name) {
         this.name = name;
         data = 0;
     }
 
-    public byte read() {
+    public short read() {
         return data;
     }
 
-    public void write(byte newData) {
+    public void write(short newData) {
         data = newData;
     }
 

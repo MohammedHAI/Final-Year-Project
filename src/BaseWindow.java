@@ -6,9 +6,7 @@
 import components.*;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.nio.ByteOrder;
 
 // Holds the components for the main window. May be renamed to "guitest.MainWindow".
 // Has no functionality on its own as it is intended to be the main entry
@@ -24,10 +22,10 @@ public class BaseWindow {
     public JPanel viewerPanel;
     public ToolMenuBar menu;
 
-    public BaseWindow(byte[] memory) {
+    public BaseWindow(short[] memory) {
         frame = new JFrame("Main Window");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setPreferredSize(new Dimension(1280, 720));
+        frame.setPreferredSize(new Dimension(1120, 720));
         frame.setLayout(new BorderLayout());
         frame.setResizable(false); // because GridBagLayout fails when resizing
 

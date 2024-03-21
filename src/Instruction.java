@@ -10,41 +10,38 @@ import java.util.HashMap;
 // should really use an enum instead
 // not finished defining instructions
 class Mnemonics {
-    final static byte NOP = 0;   // No OPeration
-    final static byte LDR = 1;   // LoaD from Register
-    final static byte LDIA = 2;  // LoaD from Immediate value into register A
-    final static byte LDIB = 3;  // LoaD from Immediate value into register B
-    final static byte LDIC = 4;  // LoaD from Immediate value into register C
-    final static byte LDID = 5;  // LoaD from Immediate value into register D
-    final static byte LDAB = 6;  // LoaD from Address into register B
-    final static byte STR = 7;   // STore into Register
-    final static byte STI = 8;   // STore into Immediate value
-    final static byte STAA = 9;  // STore from Register A into Address
-    final static byte STAC = 10; // STore from Register C into Address
-    final static byte ADRC = 11; // ADd two Register values and store in C
-    final static byte SUR = 12;  // SUbtract two Register values
-    final static byte OUTC = 50; // OUTput a Character to the screen
-    final static byte OUTS = 51; // OUTput a String to the screen
-    final static byte HLT = -1;  // HaLT
+    final static short NOP = 0;   // No OPeration
+    final static short LDR = 1;   // LoaD from Register
+    final static short LDIA = 2;  // LoaD from Immediate value into register A
+    final static short LDIB = 3;  // LoaD from Immediate value into register B
+    final static short LDIC = 4;  // LoaD from Immediate value into register C
+    final static short LDID = 5;  // LoaD from Immediate value into register D
+    final static short LDAB = 6;  // LoaD from Address into register B
+    final static short STR = 7;   // STore into Register (This is stupid, we already have a LoaD operation for that...)
+    final static short STI = 8;   // STore into Immediate value
+    final static short STAA = 9;  // STore from Register A into Address
+    final static short STAC = 10; // STore from Register C into Address
+    final static short ADRC = 11; // ADd two Register values and store in C
+    final static short SUR = 12;  // SUbtract two Register values
+    final static short OUTC = 50; // OUTput a Character to the screen
+    final static short OUTS = 51; // OUTput a String to the screen
+    final static short HLT = -1;  // HaLT
 }
-
-// note - to convert byte to unsigned do:
-// int unsignedValue = b & 0xFF;
 
 // outlines what an instruction consists of
 // instructions are 2 bytes long
 public class Instruction {
-    final private byte opcode;
-    final private byte operand;
-    final private static HashMap<String, Byte> mnemonicLookup = new HashMap<>();
-    final private static HashMap<Byte, String> byteLookup = new HashMap<>();
+    final private short opcode;
+    final private short operand;
+    final private static HashMap<String, Short> mnemonicLookup = new HashMap<>();
+    final private static HashMap<Short, String> byteLookup = new HashMap<>();
 
-    public Instruction(byte opcode, byte operand) {
+    public Instruction(short opcode, short operand) {
         this.opcode = opcode;
         this.operand = operand;
     }
 
-    public boolean execute(MainMemory mm, int PC, Register[] registers, OutputBuffer buffer) {
+    public boolean execute(MainMemory mm, int statusFlag, int PC, int SP, Register[] registers, OutputBuffer buffer) {
         switch (opcode) {
             case Mnemonics.NOP:
                 break;
@@ -66,7 +63,7 @@ public class Instruction {
             break;
 
             case Mnemonics.ADRC:
-                registers[2].write((byte) (registers[operand >> 4].read() + registers[operand & 0x07].read()));
+                registers[2].write((short) (registers[operand >> 4].read() + registers[operand & 0x07].read()));
             break;
 
             case Mnemonics.LDAB:
@@ -80,8 +77,8 @@ public class Instruction {
 
             case Mnemonics.OUTS:
                 StringBuilder sb = new StringBuilder();
-                byte next = operand; // address of start of string
-                byte character = mm.read(next);
+                short next = operand; // address of start of string
+                short character = mm.read(next);
                 while (character != 0) { // null terminator
                     if (character == 0x0D || character == 0x0A) { // newline characters must be handled differently
                         sb.append("\n");
@@ -145,18 +142,18 @@ public class Instruction {
     }
 
     // Get an instruction as a byte when given its corresponding assembly mnemonic
-    public static byte compileOpcode(String mnemonic) {
-        return mnemonicLookup.getOrDefault(mnemonic, (byte) 0); // NOP if instruction unknown
+    public static short compileOpcode(String mnemonic) {
+        return mnemonicLookup.getOrDefault(mnemonic, (short) 0); // NOP if instruction unknown
     }
 
     // Get an operand as a byte
-    public static byte compileOperand(String data) {
-        return Byte.parseByte(data.strip());
+    public static short compileOperand(String data) {
+        return Short.parseShort(data.strip());
     }
 
     // Get the mnemonic for a byte, if it exists
     public static String decompileOpcode(String opcode) {
-        return byteLookup.getOrDefault(Byte.parseByte(opcode), "Unknown"); // NOP if instruction unknown
+        return byteLookup.getOrDefault(Short.parseShort(opcode), "Unknown"); // NOP if instruction unknown
     }
 
     @Override

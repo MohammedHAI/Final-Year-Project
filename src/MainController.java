@@ -9,11 +9,8 @@
 import components.OutputBuffer;
 
 import javax.swing.*;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.plaf.FileChooserUI;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
@@ -21,6 +18,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.io.*;
 
@@ -32,19 +30,18 @@ public class MainController {
         Instruction.setupLookups();
 
         // program data
-        byte[] data = new byte[] {0x02, 0x01,
+        short[] data = new short[] {0x02, 0x01,
                 0x06, 0x0A,
                 0x0B, 0x01,
                 0x0A, 0x0B,
-                (byte) 0xFF, 0x00,
+                (short) 0xFF, 0x00,
                 0x01, 0x00
         };
 
         vc.mm.writeBlock(data);
 
         // main code, run vc in separate thread from GUI
-
-        BaseWindow bw = new BaseWindow(vc.mm.getData(16));
+        BaseWindow bw = new BaseWindow(vc.mm.getData(256));
         startVirtualComputer(vcThread);
 
         // controls all timing for GUI and virtual computer
@@ -118,35 +115,159 @@ public class MainController {
         bw.editor.compileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ArrayList<Byte> compiledCode = new ArrayList<>();
+                ArrayList<Short> compiledCode = new ArrayList<>();
+                ArrayList<String> labels = new ArrayList<>();
                 JTextArea textArea = bw.editor.textArea;
 
-                // compile instructions to machine code
-                int numberOfLines = textArea.getLineCount();
-                for (int i = 0; i < numberOfLines; i++) {
-                    // Get each line and split it into separate opcode and operand
+                // new code using state machine
+                enum STATE {
+                    READY,
+                    LABEL,
+                    OPCODE,
+                    OPERAND,
+                    STARTCONSTANT,
+                    ENDCONSTANT,
+                    END
+                }
+                enum TYPE { // for constants
+                    NONE,
+                    INT,
+                    STRING
+                }
+                STATE s = STATE.READY;
+                TYPE t = TYPE.NONE;
+                int constantPos = 0;
+                final int CONSTANTBASE = 128; // No restriction on constant area
+                int lineNumber = 0;
+                String line = "";
+                String[] lineComponents = new String[0];
+                short opcode = 0;
+                short operand = 0;
+                short intConstant = 0;
+                ArrayList<Short> stringConstant = new ArrayList<>();
+
+                // Implements state machine as seen in report, but handles integers and strings differently, very inefficient
+                while (s != STATE.END) {
                     try {
-                        String line = textArea.getText(textArea.getLineStartOffset(i), textArea.getLineEndOffset(i) - textArea.getLineStartOffset(i));
-                        String[] lineComponents = line.split(" +");
-
-                        // preprocessing before attempting to compile
-
-                        // perform instruction lookup Mnemonic -> Byte
-                        compiledCode.add(Instruction.compileOpcode(lineComponents[0])); // opcode
-
-                        if (lineComponents.length < 2) { // no operand
-                            compiledCode.add(Instruction.compileOperand("0")); // default value
+                        line = textArea.getText(textArea.getLineStartOffset(lineNumber), textArea.getLineEndOffset(lineNumber) - textArea.getLineStartOffset(lineNumber));
+                        lineComponents = line.split(" +");
+                    }
+                    catch (BadLocationException badLocationException) { // no more lines to read
+                        s = STATE.END;
+                    }
+                    switch (s) {
+                        case READY -> {
+                            try {
+                                if (lineComponents[0].startsWith(".")) {
+                                    labels.add(lineComponents[0]);
+                                    lineNumber++;
+                                    s = STATE.LABEL;
+                                } else if (lineComponents[0].startsWith("$")) { // string constant
+                                    t = TYPE.STRING;
+                                    s = STATE.STARTCONSTANT;
+                                } else if (lineComponents[0].startsWith("#")) { // int constant
+                                    int checkInt = Integer.parseInt(line.substring(1)); // check that string wasn't passed
+                                    t = TYPE.INT;
+                                    s = STATE.STARTCONSTANT;
+                                } else if (lineComponents.length < 2) {
+                                    lineNumber++; // skip this line
+                                }
+                                else {
+                                    s = STATE.END; // read error, exit immediately
+                                }
+                            }
+                            catch (NumberFormatException numberFormatException) {
+                                System.out.println(numberFormatException.getLocalizedMessage());
+                                s = STATE.END; // String read as int, etc
+                            }
                         }
-                        else {
-                            compiledCode.add(Instruction.compileOperand(lineComponents[1])); // operand
+                        case LABEL -> {
+                            opcode = Instruction.compileOpcode(lineComponents[0]); // opcode
+                            s = STATE.OPCODE;
+                        }
+                        case OPCODE -> {
+                            if (lineComponents.length < 2) {
+                                operand = Instruction.compileOperand("0"); // default value
+                            }
+                            else {
+                                operand = Instruction.compileOperand(lineComponents[1]); // operand
+                            }
+                            s = STATE.OPERAND;
+                        }
+                        case OPERAND -> {
+                            compiledCode.add(opcode); // needs to be handled using instructionPos
+                            compiledCode.add(operand);
+
+                            try {
+                                String nextLine = textArea.getText(textArea.getLineStartOffset(lineNumber + 1), textArea.getLineEndOffset(lineNumber + 1) - textArea.getLineStartOffset(lineNumber + 1));
+
+                                if (nextLine.isBlank()) { // blank line, meaning end of code section
+                                    lineNumber += 2; // skip blank line
+                                    s = STATE.READY;
+                                }
+                                else { // haven't gone through all lines of current label
+                                    lineNumber++;
+                                    s = STATE.LABEL;
+                                }
+                            }
+                            catch (BadLocationException badLocationException) {
+                                s = STATE.END; // no more lines, end of code
+                            }
+                        }
+                        case STARTCONSTANT -> {
+                            lineComponents[0] = lineComponents[0].substring(1) ; // remove $ or #
+
+                            if (t == TYPE.INT) {
+                                if (lineComponents[0].isBlank()) {
+                                    intConstant = Instruction.compileOperand("0"); // default value
+                                }
+                                else {
+                                    intConstant = Instruction.compileOperand(lineComponents[0]);
+                                }
+                            }
+                            else if (t == TYPE.STRING) {
+                                stringConstant.clear(); // start each string from fresh
+                                if (lineComponents[0].isBlank()) {
+                                    stringConstant.add(Instruction.compileOperand("0"));
+                                }
+                                else {
+                                    // add each byte of string, without whitespace
+                                    lineComponents[0] = lineComponents[0].strip();
+                                    for (Byte b : lineComponents[0].getBytes(StandardCharsets.UTF_8)) {
+                                        stringConstant.add((short) b);
+                                    }
+                                    stringConstant.add(Instruction.compileOperand("0")); // null terminator
+                                }
+                            }
+
+                            s = STATE.ENDCONSTANT;
+                        }
+                        case ENDCONSTANT -> {
+                            // deal with integers and strings differently (using t, TYPE)
+                            if (t == TYPE.INT) {
+                                vc.mm.write(constantPos + CONSTANTBASE, intConstant); // double check that this works
+                                constantPos++;
+                            }
+                            else if (t == TYPE.STRING) {
+                                for (Short b : stringConstant) {
+                                    vc.mm.write(constantPos + CONSTANTBASE, b);
+                                    constantPos++;
+                                }
+                            }
+
+                            if (lineNumber < textArea.getLineCount() - 1) { // haven't gone through all lines
+                                lineNumber++;
+                                s = STATE.READY;
+                            }
+                            else {
+                                s = STATE.END; // end of code
+                            }
                         }
                     }
-                    catch (BadLocationException badLocationException) {
-                        System.out.println("Unable to extract lines from program: " + badLocationException.getLocalizedMessage());
-                    }
+
                 }
 
-                // write code to memory
+                // write instruction code to memory, constants should already be handled
                 for (int i = 0; i < compiledCode.size(); i++) {
                     vc.mm.write(i, compiledCode.get(i));
                 }
@@ -168,22 +289,11 @@ public class MainController {
 
     // for bw.viewer
     public static void addViewerListeners(BaseWindow bw, VirtualComputer vc) {
-        bw.viewer.goToButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // test code
-                JDialog d = new JDialog(bw.frame);
-                d.setSize(new Dimension(300, 200));
-                d.setLocationRelativeTo(null);
-                d.add(new JLabel("Temp"));
-                d.setVisible(true);
-            }
-        });
-
         bw.viewer.numberSystemButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // test code
+                // TODO: implement number system switching
                 JDialog d = new JDialog(bw.frame);
                 d.setSize(new Dimension(300, 200));
                 d.setLocationRelativeTo(null);
@@ -218,7 +328,7 @@ public class MainController {
                     public void actionPerformed(ActionEvent e) {
                         // perform the action before closing
                         JTextArea code = bw.editor.textArea;
-                        code.setText(""); // clear the current code
+                        code.setText(".main"); // clear the current code
 
                         // this performs the translation from bytes to mnemonics
                         int i = 0;
@@ -306,7 +416,7 @@ public class MainController {
         fileMenuItemNewProgram.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("New program clicked!");
+                bw.editor.textArea.setText(null);
             }
         });
         fileMenuItemLoad.addActionListener(new ActionListener() {
@@ -361,7 +471,7 @@ public class MainController {
     // opens a file dialog and returns the one chosen
     public static File chooseFile(Frame frame, boolean save) {
         JFileChooser fc = new JFileChooser();
-        //fc.setCurrentDirectory(new File("."));
+        fc.setCurrentDirectory(new File("C:\\Users\\Lenovo\\Desktop\\School\\University\\Year 3 Semester A\\FYP\\Temp Files")); // default path
         if (save) {
             fc.setDialogType(JFileChooser.SAVE_DIALOG);
             fc.setDialogTitle("Save program");
@@ -434,7 +544,7 @@ public class MainController {
         for (int i = 0; i < model.getRowCount(); i++) {
             for (int j = 0; j < model.getColumnCount() - 1; j++) { // don't include address column
                 if (i * 16 + j < vc.mm.size()) { // if index is not out of bounds of memory
-                    if (vc.mm.read(i * 16 + j) != Byte.parseByte((String) model.getValueAt(i, j + 1))) {// If cell value does not match memory value
+                    if (vc.mm.read(i * 16 + j) != Short.parseShort((String) model.getValueAt(i, j + 1))) {// If cell value does not match memory value
                         model.setValueAt(String.valueOf(vc.mm.read(i * 16 + j)), i, j + 1); // write new value to table
                     }
                 }
@@ -460,7 +570,7 @@ public class MainController {
                     // adjust to account for address offset
                     // TODO: is bugged because race condition causes canonical memory to be preferred over any user edits to cells. also empty cell edit causes crash!
                     if (row * 16 + column - 1 < vc.mm.size()) {
-                        vc.mm.write(row * 16 + column - 1, Byte.parseByte((String) model.getValueAt(row, column)));
+                        vc.mm.write(row * 16 + column - 1, Short.parseShort((String) model.getValueAt(row, column)));
                     }
                 }
             }

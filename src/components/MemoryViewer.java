@@ -27,11 +27,11 @@ public class MemoryViewer extends JComponent {
     public JButton decompileButton;
     private int[] data; // using short as byte is signed
 
-    public MemoryViewer(byte[] memory) {
+    public MemoryViewer(short[] memory) {
         setLayout(new BorderLayout());
 
         // initialise data
-        data = new int[256 * 3];
+        data = new int[256];
 
         for (int i = 0; i < memory.length; i++) {
             data[i] = memory[i];
@@ -42,7 +42,7 @@ public class MemoryViewer extends JComponent {
         table = new JTable(model);
         JScrollPane scrollPane = new JScrollPane(table);
         JPanel memoryPanel = new JPanel();
-        goToButton = new JButton("Go to address...");
+        JPanel buttonPanel = new JPanel();
         numberSystemButton = new JButton("Change number system");
         decompileButton = new JButton("Decompile");
 
@@ -71,27 +71,42 @@ public class MemoryViewer extends JComponent {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (row < (memory.length / 16)) { // if the row contains memory
+                /*
+                    Rows are distinguished by colour according to specifications:
+                    Instruction - Yellow
+                    Constants - White
+                    Stack - Pink
+                */
+
+                if (row < (memory.length / 16) / 2) {
                     c.setBackground(Color.YELLOW);
                 }
-                else {
+                else if ((row >= (memory.length / 16) / 2) && (row < (memory.length / 16) - 1)) {
                     c.setBackground(Color.WHITE);
+                }
+                else {
+                    c.setBackground(Color.PINK);
                 }
                 return c;
             }
         });
 
-        // update column widths
+        // update column widths and row heights
         TableColumn addressColumn = table.getColumnModel().getColumn(0);
         addressColumn.setPreferredWidth(120);
+        table.setRowHeight(20);
 
         memoryPanel.setLayout(new FlowLayout());
+        memoryPanel.setPreferredSize(new Dimension(700, 350));
+
+        // setup buttons
+        buttonPanel.setLayout(new GridLayout(2, 1));
+        buttonPanel.add(numberSystemButton);
+        buttonPanel.add(decompileButton);
 
         // add components
         memoryPanel.add(scrollPane);
-        memoryPanel.add(goToButton);
-        memoryPanel.add(numberSystemButton);
-        memoryPanel.add(decompileButton);
+        memoryPanel.add(buttonPanel);
         add(memoryPanel);
     }
 }

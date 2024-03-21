@@ -6,21 +6,21 @@
 // simply an array of bytes
 
 public class MainMemory {
-    private byte[] data;
+    private short[] data;
 
     public MainMemory(int size) {
-        data = new byte[size];
+        data = new short[size];
     }
 
-    public byte read(int index) {
+    public short read(int index) {
         return data[index];
     }
 
-    public void write(int index, byte value) {
+    public void write(int index, short value) {
         data[index] = value;
     }
 
-    public void writeBlock(byte[] block) {
+    public void writeBlock(short[] block) {
         if (block.length > data.length) { // block is larger
             for (int i = 0; i < data.length; i++) {
                 data[i] = block[i];
@@ -39,8 +39,8 @@ public class MainMemory {
     }
 
     // get data up to a specified index
-    public byte[] getData(int index) {
-        byte[] temp = new byte[index];
+    public short[] getData(int index) {
+        short[] temp = new short[index];
 
         for (int i = 0; i < temp.length; i++) {
             temp[i] = data[i];
