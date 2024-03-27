@@ -9,8 +9,7 @@
 import components.OutputBuffer;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
+import javax.swing.event.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
@@ -21,6 +20,7 @@ import java.awt.event.MouseEvent;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.io.*;
+import java.util.HexFormat;
 
 public class MainController {
     public static void main(String[] args) {
@@ -34,36 +34,40 @@ public class MainController {
                 0x06, 0x0A,
                 0x0B, 0x01,
                 0x0A, 0x0B,
-                (short) 0xFF, 0x00,
+                0xFF, 0x00,
                 0x01, 0x00
         };
 
-        vc.mm.writeBlock(data);
+        vc.state.mm.writeBlock(data);
 
         // main code, run vc in separate thread from GUI
-        BaseWindow bw = new BaseWindow(vc.mm.getData(256));
+        BaseWindow bw = new BaseWindow(vc.state.mm.getData(256));
         startVirtualComputer(vcThread);
 
         // controls all timing for GUI and virtual computer
-        Timer t = new Timer((1 / vc.clockSpeed) * 1000, new ActionListener() {
+        Timer t = new Timer((int)((1.0f / vc.clockSpeed) * 1000), new ActionListener() { // convert to float to prevent clock speed being 0
             @Override
             public void actionPerformed(ActionEvent e) {
                 // call any update methods here
                 synchronized (vc) {
                     vc.notify();
+                    if (vc.state.halted) { bw.controls.updateRunLabel(true); } // notices a halt
+                    updateRegisters(bw, vc);
                     updateTable(bw, vc);
                 }
             }
         });
 
         // test code, make run/stop and reset buttons work
-        addControlListeners(bw, vc, t);
+        addControlListeners(bw, vc, t, buffer);
+
+        addRegisterListeners(bw, vc);
 
         // test code, make memory viewer buttons work, make table tooltip work
         addViewerListeners(bw, vc);
 
         // test code, makes output clear button work
-        addOutputListeners(bw, vc);
+        addOutputListeners(bw, vc, buffer);
 
         // test code, set up file menu buttons
         addFileMenuListeners(bw);
@@ -75,11 +79,10 @@ public class MainController {
         DefaultTableModel model = getTableModel(bw, vc);
 
         // test code, main loop that handles data transfer between GUI and VC
+        // TODO: try to get this stuff in timer's event handler instead
         while (true) {
-            updateRegisters(bw, vc);
-            updateTable(bw, vc);
             synchronized (vc) {
-                if (vc.debug) {
+                if (vc.state.debug) {
                     bw.output.textArea.append(buffer.getMessage());
                 }
             }
@@ -87,23 +90,22 @@ public class MainController {
     }
 
     // for bw.controls
-    public static void addControlListeners(BaseWindow bw, VirtualComputer vc, Timer t) {
+    public static void addControlListeners(BaseWindow bw, VirtualComputer vc, Timer t, OutputBuffer buffer) {
         bw.controls.runStopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) { // controls thread state in order to simulate halting
-                // TODO: update button label
-
-                vc.halted = !vc.halted;
-                if (vc.halted) {
+                vc.state.halted = !vc.state.halted;
+                if (vc.state.halted) {
                     t.stop();
                 }
                 else {
                     t.start();
                 }
+                bw.controls.updateRunLabel(false);
             }
         });
 
-        bw.controls.resetButton.addActionListener(new ActionListener() { // TODO: make VC stop when it has reset
+        bw.controls.resetButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 t.stop();
@@ -116,7 +118,6 @@ public class MainController {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ArrayList<Short> compiledCode = new ArrayList<>();
-                ArrayList<String> labels = new ArrayList<>();
                 JTextArea textArea = bw.editor.textArea;
 
                 // new code using state machine
@@ -159,25 +160,34 @@ public class MainController {
                         case READY -> {
                             try {
                                 if (lineComponents[0].startsWith(".")) {
-                                    labels.add(lineComponents[0]);
                                     lineNumber++;
                                     s = STATE.LABEL;
-                                } else if (lineComponents[0].startsWith("$")) { // string constant
+                                }
+                                else if (lineComponents[0].startsWith("$")) { // string constant
                                     t = TYPE.STRING;
                                     s = STATE.STARTCONSTANT;
-                                } else if (lineComponents[0].startsWith("#")) { // int constant
+                                }
+                                else if (lineComponents[0].startsWith("#")) { // int constant
                                     int checkInt = Integer.parseInt(line.substring(1)); // check that string wasn't passed
                                     t = TYPE.INT;
                                     s = STATE.STARTCONSTANT;
-                                } else if (lineComponents.length < 2) {
+                                }
+                                else if (lineComponents[0].isBlank()) {
+                                    lineNumber ++;
+                                }
+                                else if (lineComponents.length < 2) {
+                                    if (vc.state.debug) {
+                                        buffer.setMessage("*Syntax Error* on line " + (lineNumber + 1) + ": not enough arguments\n");
+                                    }
                                     lineNumber++; // skip this line
                                 }
                                 else {
+                                    buffer.setMessage("*Syntax Error* on line " + (lineNumber + 1) + ": expected an instruction, label or constant, \n");
                                     s = STATE.END; // read error, exit immediately
                                 }
                             }
                             catch (NumberFormatException numberFormatException) {
-                                System.out.println(numberFormatException.getLocalizedMessage());
+                                buffer.setMessage("*Syntax Error* on line " + (lineNumber + 1) + ": wrong constant type or missing value\n");
                                 s = STATE.END; // String read as int, etc
                             }
                         }
@@ -245,12 +255,12 @@ public class MainController {
                         case ENDCONSTANT -> {
                             // deal with integers and strings differently (using t, TYPE)
                             if (t == TYPE.INT) {
-                                vc.mm.write(constantPos + CONSTANTBASE, intConstant); // double check that this works
+                                vc.state.mm.write(constantPos + CONSTANTBASE, intConstant); // double check that this works
                                 constantPos++;
                             }
                             else if (t == TYPE.STRING) {
                                 for (Short b : stringConstant) {
-                                    vc.mm.write(constantPos + CONSTANTBASE, b);
+                                    vc.state.mm.write(constantPos + CONSTANTBASE, b);
                                     constantPos++;
                                 }
                             }
@@ -269,7 +279,30 @@ public class MainController {
 
                 // write instruction code to memory, constants should already be handled
                 for (int i = 0; i < compiledCode.size(); i++) {
-                    vc.mm.write(i, compiledCode.get(i));
+                    vc.state.mm.write(i, compiledCode.get(i));
+                }
+            }
+        });
+
+        bw.controls.jumpToButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String input = (String) JOptionPane.showInputDialog(bw.frame, "Enter the address to jump to:", "Jump to...", JOptionPane.PLAIN_MESSAGE, null, null, "0");
+                if (input != null) {
+                    try {
+                        int address = Integer.parseInt(input);
+                        if (address > -1 && address < 256) { // within memory region
+                            synchronized (vc) {
+                                vc.state.PC = Integer.parseInt(input);
+                            }
+                        }
+                        else {
+                            throw new Exception("Error: address out of bounds");
+                        }
+                    }
+                    catch (Exception e2) {
+                        JOptionPane.showMessageDialog(null, "Error: couldn't parse input", "Error", JOptionPane.PLAIN_MESSAGE);
+                    }
                 }
             }
         });
@@ -280,27 +313,95 @@ public class MainController {
                 // should successfully override the Virtual Computer halted state
                 synchronized (vc) {
                     vc.step();
-                    vc.halted = true;
+                    vc.state.halted = true;
                     t.stop();
                 }
+                bw.controls.updateRunLabel(true); // Force Run/Stop button to show "Run"
+            }
+        });
+
+        bw.controls.speedSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                vc.clockSpeed = (int) bw.controls.speedSpinner.getValue();
+                t.setDelay((int)((1.0f / vc.clockSpeed) * 1000));
             }
         });
     }
 
+    // makes it easier
+    public static void addRegisterDocumentListener(JTextField registerField, VirtualComputer vc, int registerNumber, String registerName) {
+        registerField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        Short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.registers[registerNumber].write(value);
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        Short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.registers[registerNumber].write(value);
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {} // not used, doesn't do much anyway
+        });
+    }
+
+    // for bw.registers
+    public static void addRegisterListeners(BaseWindow bw, VirtualComputer vc) {
+        addRegisterDocumentListener(bw.registers.field1, vc, 0, "A");
+        addRegisterDocumentListener(bw.registers.field3, vc, 1, "B");
+        addRegisterDocumentListener(bw.registers.field5, vc, 2, "C");
+        addRegisterDocumentListener(bw.registers.field7, vc, 3, "D");
+    }
+
     // for bw.viewer
     public static void addViewerListeners(BaseWindow bw, VirtualComputer vc) {
-        bw.viewer.numberSystemButton.addActionListener(new ActionListener() {
+        /*bw.viewer.numberSystemButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // test code
                 // TODO: implement number system switching
-                JDialog d = new JDialog(bw.frame);
-                d.setSize(new Dimension(300, 200));
-                d.setLocationRelativeTo(null);
-                d.add(new JLabel("Temp"));
-                d.setVisible(true);
+
+                if (bw.viewer.useHexadecimal) {
+                    JOptionPane.showMessageDialog(null, "Table changed to decimal number system");
+                }
+                else {
+                    JOptionPane.showMessageDialog(null, "Table changed to hexadecimal number system");
+                }
+
+                bw.viewer.useHexadecimal = !bw.viewer.useHexadecimal;
+                bw.viewer.updateTable();
             }
-        });
+        });*/
 
         bw.viewer.decompileButton.addActionListener(new ActionListener() {
             @Override
@@ -378,7 +479,11 @@ public class MainController {
                 int column = table.columnAtPoint(e.getPoint());
 
                 if (row >= 0 && column >= 1) { // adds tooltip
-                    table.setToolTipText(Instruction.decompileOpcode((String) table.getValueAt(row, column)));
+                    StringBuilder tooltipBuilder = new StringBuilder();
+                    String originalValue = (String) table.getValueAt(row, column);
+                    tooltipBuilder.append("Opcode: " + Instruction.decompileOpcode(originalValue) + ", ");
+                    tooltipBuilder.append("Character: " + Character.toChars(Integer.parseInt(originalValue))[0]); // expecting only 1 char
+                    table.setToolTipText(tooltipBuilder.toString());
                 }
                 else { // removes tooltip
                     table.setToolTipText(null);
@@ -388,7 +493,7 @@ public class MainController {
     }
 
     // for bw.output
-    public static void addOutputListeners(BaseWindow bw, VirtualComputer vc) {
+    public static void addOutputListeners(BaseWindow bw, VirtualComputer vc, OutputBuffer buffer) {
         bw.output.clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -400,7 +505,7 @@ public class MainController {
             @Override
             public void actionPerformed(ActionEvent e) {
                 synchronized (vc) {
-                    vc.debug = !vc.debug;
+                    vc.state.debug = !vc.state.debug;
                 }
             }
         });
@@ -422,7 +527,7 @@ public class MainController {
         fileMenuItemLoad.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Load clicked!");
+                //System.out.println("Load clicked!");
 
                 File selectedFile = chooseFile(bw.frame, false);
                 if (selectedFile == null) { return; }
@@ -444,7 +549,7 @@ public class MainController {
         fileMenuItemSave.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Save clicked!");
+                //System.out.println("Save clicked!");
 
                 File selectedFile = chooseFile(bw.frame, true);
                 if (selectedFile == null) { return; }
@@ -456,7 +561,7 @@ public class MainController {
                 }
                 catch (IOException ioException) {
                     handleIOException(ioException, bw.frame, "Error opening file: " + ioException.getLocalizedMessage());
-                    System.out.println("Error writing a.txt: " + ioException.getLocalizedMessage());
+                    //System.out.println("Error writing a.txt: " + ioException.getLocalizedMessage());
                 }
             }
         });
@@ -519,33 +624,37 @@ public class MainController {
         helpMenuItemAbout.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("About clicked!");
+                //System.out.println("About clicked!");
             }
         });
     }
 
     public static void updateRegisters(BaseWindow bw, VirtualComputer vc) {
-        bw.registers.field1.setText(String.valueOf(vc.registers[0].read()));
-        bw.registers.field2.setText(String.valueOf(vc.PC));
-        bw.registers.field3.setText(String.valueOf(vc.registers[1].read()));
-        bw.registers.field4.setText(String.valueOf(vc.SP));
-        bw.registers.field5.setText(String.valueOf(vc.registers[2].read()));
-        bw.registers.field6.setText(String.valueOf(vc.statusFlag));
-        bw.registers.field7.setText(String.valueOf(vc.registers[3].read()));
-        bw.registers.field8.setText(vc.halted ? "Yes" : "No"); // show "Yes" if halted, otherwise "No"
+        bw.registers.field1.setText(String.valueOf(vc.state.registers[0].read()));
+        bw.registers.field2.setText(String.valueOf(vc.state.PC));
+        bw.registers.field3.setText(String.valueOf(vc.state.registers[1].read()));
+        bw.registers.field4.setText(String.valueOf(vc.state.SP));
+        bw.registers.field5.setText(String.valueOf(vc.state.registers[2].read()));
+        bw.registers.field6.setText(String.valueOf(vc.state.statusFlag));
+        bw.registers.field7.setText(String.valueOf(vc.state.registers[3].read()));
+        bw.registers.field8.setText(vc.state.halted ? "Yes" : "No"); // show "Yes" if halted, otherwise "No"
     }
 
     // table reads all bytes from memory
     public static void updateTable(BaseWindow bw, VirtualComputer vc) {
         DefaultTableModel model = (DefaultTableModel) bw.viewer.table.getModel();
 
+        synchronized (vc) {
+            bw.viewer.updatePC(vc.state.PC);
+        }
+
         // update table with memory, lazy implementation
         // please don't freak out. all it does is update the table with a string representation of the bytes that have changed in memory
         for (int i = 0; i < model.getRowCount(); i++) {
             for (int j = 0; j < model.getColumnCount() - 1; j++) { // don't include address column
-                if (i * 16 + j < vc.mm.size()) { // if index is not out of bounds of memory
-                    if (vc.mm.read(i * 16 + j) != Short.parseShort((String) model.getValueAt(i, j + 1))) {// If cell value does not match memory value
-                        model.setValueAt(String.valueOf(vc.mm.read(i * 16 + j)), i, j + 1); // write new value to table
+                if (i * 16 + j < vc.state.mm.size()) { // if index is not out of bounds of memory
+                    if (vc.state.mm.read(i * 16 + j) != Short.parseShort((String) model.getValueAt(i, j + 1))) {// If cell value does not match memory value
+                        model.setValueAt(String.valueOf(vc.state.mm.read(i * 16 + j)), i, j + 1); // write new value to table
                     }
                 }
             }
@@ -565,12 +674,12 @@ public class MainController {
 
                 // if a single cell has changed
                 if (column != TableModelEvent.ALL_COLUMNS) {
-                    System.out.println("Cell at row " + row + ", column " + column + " has changed: " + model.getValueAt(row, column));
+                    //System.out.println("Cell at row " + row + ", column " + column + " has changed: " + model.getValueAt(row, column));
 
                     // adjust to account for address offset
                     // TODO: is bugged because race condition causes canonical memory to be preferred over any user edits to cells. also empty cell edit causes crash!
-                    if (row * 16 + column - 1 < vc.mm.size()) {
-                        vc.mm.write(row * 16 + column - 1, Short.parseShort((String) model.getValueAt(row, column)));
+                    if (row * 16 + column - 1 < vc.state.mm.size()) {
+                        vc.state.mm.write(row * 16 + column - 1, Short.parseShort((String) model.getValueAt(row, column)));
                     }
                 }
             }

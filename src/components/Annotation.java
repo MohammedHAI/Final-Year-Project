@@ -1,5 +1,5 @@
 /*
-    Author: Mohammed Abdul Wadud Hamza Al-Islam
+    Author: Mohastate.mmed Abdul Wadud Hamza Al-Islam
     Date created: 06/01/2024
  */
 package components;

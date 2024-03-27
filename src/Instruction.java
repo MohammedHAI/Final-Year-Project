@@ -23,9 +23,11 @@ class Mnemonics {
     final static short STAC = 10; // STore from Register C into Address
     final static short ADRC = 11; // ADd two Register values and store in C
     final static short SUR = 12;  // SUbtract two Register values
+    final static short JMP = 40; // JuMP to address
     final static short OUTC = 50; // OUTput a Character to the screen
     final static short OUTS = 51; // OUTput a String to the screen
-    final static short HLT = -1;  // HaLT
+    final static short PS = 254; // PauSe and increment PC
+    final static short HALT = 255;  // HALT program
 }
 
 // outlines what an instruction consists of
@@ -41,33 +43,33 @@ public class Instruction {
         this.operand = operand;
     }
 
-    public boolean execute(MainMemory mm, int statusFlag, int PC, int SP, Register[] registers, OutputBuffer buffer) {
+    public boolean execute(ComputerState state, OutputBuffer buffer) {
         switch (opcode) {
             case Mnemonics.NOP:
                 break;
 
             case Mnemonics.LDIA:
-                registers[0].write(operand);
+                state.registers[0].write(operand);
             break;
 
             case Mnemonics.STAA:
-                mm.write(operand, registers[0].read());
+                state.mm.write(operand, state.registers[0].read());
             break;
 
             case Mnemonics.STAC:
-                mm.write(operand, registers[2].read());
+                state.mm.write(operand, state.registers[2].read());
             break;
 
             case Mnemonics.STR:
-                registers[operand >> 4].write(registers[operand & 0x0F].read());
+                state.registers[operand >> 4].write(state.registers[operand & 0x0F].read());
             break;
 
             case Mnemonics.ADRC:
-                registers[2].write((short) (registers[operand >> 4].read() + registers[operand & 0x07].read()));
+                state.registers[2].write((short) (state.registers[operand >> 4].read() + state.registers[operand & 0x07].read()));
             break;
 
             case Mnemonics.LDAB:
-                registers[1].write(mm.read(operand));
+                state.registers[1].write(state.mm.read(operand));
             break;
 
             case Mnemonics.OUTC:
@@ -78,26 +80,34 @@ public class Instruction {
             case Mnemonics.OUTS:
                 StringBuilder sb = new StringBuilder();
                 short next = operand; // address of start of string
-                short character = mm.read(next);
+                short character = state.mm.read(next);
                 while (character != 0) { // null terminator
                     if (character == 0x0D || character == 0x0A) { // newline characters must be handled differently
                         sb.append("\n");
                     }
                     else {
-                        sb.append(Character.toChars(mm.read(next)));
+                        sb.append(Character.toChars(state.mm.read(next)));
                     }
                     next += 1;
-                    character = mm.read(next);
+                    character = state.mm.read(next);
                 }
                 buffer.setMessage(sb.toString());
                 buffer.lockMessage();
             break;
 
-            case Mnemonics.HLT:
+            case Mnemonics.JMP:
+                state.PC = operand;
+            break;
+
+            case Mnemonics.PS:
+                state.PC = state.PC + 1;
+                return true;
+
+            case Mnemonics.HALT:
                 return true;
 
             default:
-                System.out.println("Unknown instruction " + opcode);
+                //System.out.println("Unknown instruction " + opcode);
             break;
         }
         return false;
@@ -118,9 +128,11 @@ public class Instruction {
         mnemonicLookup.put("STAC", Mnemonics.STAC);
         mnemonicLookup.put("ADRC", Mnemonics.ADRC);
         mnemonicLookup.put("SUR", Mnemonics.SUR);
+        mnemonicLookup.put("JMP", Mnemonics.JMP);
+        mnemonicLookup.put("PS", Mnemonics.PS);
         mnemonicLookup.put("OUTC", Mnemonics.OUTC);
         mnemonicLookup.put("OUTS", Mnemonics.OUTS);
-        mnemonicLookup.put("HLT", Mnemonics.HLT);
+        mnemonicLookup.put("HLT", Mnemonics.HALT);
 
         // reverse lookup for decompiling, not very efficient
         byteLookup.put (Mnemonics.NOP, "NOP");
@@ -136,9 +148,11 @@ public class Instruction {
         byteLookup.put(Mnemonics.STAC, "STAC");
         byteLookup.put(Mnemonics.ADRC, "ADRC");
         byteLookup.put(Mnemonics.SUR, "SUR");
+        byteLookup.put(Mnemonics.JMP, "JMP");
+        byteLookup.put(Mnemonics.PS, "PS");
         byteLookup.put(Mnemonics.OUTC, "OUTC");
         byteLookup.put(Mnemonics.OUTS, "OUTS");
-        byteLookup.put(Mnemonics.HLT, "HLT");
+        byteLookup.put(Mnemonics.HALT, "HLT");
     }
 
     // Get an instruction as a byte when given its corresponding assembly mnemonic

@@ -23,7 +23,7 @@ public class RegisterPanel extends JComponent {
     public JLabel label3 = new JLabel("Register B");
     public JLabel label4 = new JLabel("SP");
     public JLabel label5 = new JLabel("Register C");
-    public JLabel label6 = new JLabel("Status Flags");
+    public JLabel label6 = new JLabel("Status Flag");
     public JLabel label7 = new JLabel("Register D");
     public JLabel label8 = new JLabel("Halted");
 
@@ -63,6 +63,12 @@ public class RegisterPanel extends JComponent {
                 field7,
                 field8
         };
+
+        // test code, might remove later
+        field2.setEditable(false);
+        field4.setEditable(false);
+        field6.setEditable(false);
+        field8.setEditable(false);
 
         // adding components
         for (int i = 0; i < NUMREGISTERS; i++) {

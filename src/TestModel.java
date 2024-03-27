@@ -25,7 +25,7 @@ public class TestModel {
         };
 
         for (int i = 0; i < data.length; i++) {
-            vc.mm.write((byte) i, data[i]);
+            vc.state.mm.write((byte) i, data[i]);
         }
 
         vc.runAndPrint();

@@ -3,7 +3,7 @@
     Date created:: 07/12/2023
  */
 
-// Base class for general and special registers
+// Base class for general and special state.registers
 
 public class Register {
     private final String name;

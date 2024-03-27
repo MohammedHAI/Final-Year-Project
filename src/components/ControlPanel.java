@@ -18,8 +18,9 @@ public class ControlPanel extends JComponent {
 
     public JButton runStopButton;
     public JButton stepForwardsButton;
-    public JButton stepBackwardsButton;
+    public JButton jumpToButton;
     public JButton resetButton;
+    public JSpinner speedSpinner;
     public JPanel panel;
 
     public ControlPanel() {
@@ -28,18 +29,38 @@ public class ControlPanel extends JComponent {
         // define components
         runStopButton = new JButton(runState);
         stepForwardsButton = new JButton("Step Forwards");
-        stepBackwardsButton = new JButton("Step Backwards");
+        jumpToButton = new JButton("Jump to...");
         resetButton = new JButton("Reset");
+        JLabel speedLabel = new JLabel("Clock speed (Hz)");
+        SpinnerListModel model = new SpinnerListModel();
+        speedSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
         panel = new JPanel();
 
         // modify components
-        panel.setLayout(new GridLayout(2, 2));
+        panel.setLayout(new GridLayout(3, 2));
 
         // add components
         panel.add(runStopButton);
         panel.add(resetButton);
-        panel.add(stepBackwardsButton);
+        panel.add(jumpToButton);
         panel.add(stepForwardsButton);
+        panel.add(speedLabel);
+        panel.add(speedSpinner);
         add(panel);
+    }
+
+    // Toggle between "Run" and "Stop"
+    public void updateRunLabel(boolean forceRun) {
+        if (forceRun) {
+            runStopButton.setText(runState);
+            return;
+        }
+
+        if (runStopButton.getText().equals(runState)) {
+            runStopButton.setText(stopState);
+        }
+        else {
+            runStopButton.setText(runState);
+        }
     }
 }

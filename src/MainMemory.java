@@ -13,11 +13,18 @@ public class MainMemory {
     }
 
     public short read(int index) {
-        return data[index];
+        if (index > -1 && index < data.length) {
+            return data[index];
+        }
+        else { // out of bounds
+            return 0;
+        }
     }
 
     public void write(int index, short value) {
-        data[index] = value;
+        if (index > -1 && index < data.length) {
+            data[index] = value;
+        }
     }
 
     public void writeBlock(short[] block) {
@@ -25,7 +32,7 @@ public class MainMemory {
             for (int i = 0; i < data.length; i++) {
                 data[i] = block[i];
             }
-            System.out.println("Not all data written, block is too large");
+            //System.out.println("Not all data written, block is too large");
         }
         else if (block.length < data.length) { // block is smaller
             for (int i = 0; i < block.length; i++) {

@@ -25,9 +25,9 @@ public class BaseWindow {
     public BaseWindow(short[] memory) {
         frame = new JFrame("Main Window");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setPreferredSize(new Dimension(1120, 720));
+        frame.setPreferredSize(new Dimension(1280, 720));
         frame.setLayout(new BorderLayout());
-        frame.setResizable(false); // because GridBagLayout fails when resizing
+        frame.setResizable(false); // because GridBagLayout fails when resizing smaller
 
         // defining components
         editor = new CodeEditor();
@@ -75,7 +75,7 @@ public class BaseWindow {
         // temp, test connecting to backend
         JTextField temp = (JTextField) registers.getComponent(1);
         //JTextField temp2 = (JTextField) temp.getComponent(0);
-        System.out.println(temp);
+        //System.out.println(temp);
         //System.out.println(temp2);
 
         frame.pack();
