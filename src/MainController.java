@@ -29,8 +29,8 @@ public class MainController {
         Thread vcThread = new Thread(vc);
         Instruction.setupLookups();
 
-        // program data
-        short[] data = new short[] {0x02, 0x01,
+        // program data, TODO: uncomment for production
+        /*short[] data = new short[] {0x02, 0x01,
                 0x06, 0x0A,
                 0x0B, 0x01,
                 0x0A, 0x0B,
@@ -38,7 +38,7 @@ public class MainController {
                 0x01, 0x00
         };
 
-        vc.state.mm.writeBlock(data);
+        vc.state.mm.writeBlock(data);*/
 
         // main code, run vc in separate thread from GUI
         BaseWindow bw = new BaseWindow(vc.state.mm.getData(256));
@@ -576,7 +576,7 @@ public class MainController {
     // opens a file dialog and returns the one chosen
     public static File chooseFile(Frame frame, boolean save) {
         JFileChooser fc = new JFileChooser();
-        fc.setCurrentDirectory(new File("C:\\Users\\Lenovo\\Desktop\\School\\University\\Year 3 Semester A\\FYP\\Temp Files")); // default path
+        //fc.setCurrentDirectory(new File("C:\\Users\\Lenovo\\Desktop\\School\\University\\Year 3 Semester A\\FYP\\Temp Files")); // default path
         if (save) {
             fc.setDialogType(JFileChooser.SAVE_DIALOG);
             fc.setDialogTitle("Save program");

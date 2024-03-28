@@ -35,7 +35,8 @@ public class ToolMenuBar extends JMenuBar {
         // Add a "Help" menu to the menu bar
         helpMenu = new JMenu("Help");
         helpMenu.setMnemonic('H');
-        add(helpMenu);
+        // TODO: uncomment for production
+        //add(helpMenu);
 
         JMenuItem helpMenuItemAbout = new JMenuItem("About...");
 

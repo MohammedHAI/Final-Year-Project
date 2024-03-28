@@ -140,7 +140,7 @@ public class MemoryViewer extends JComponent {
 
         // setup buttons
         buttonPanel.setLayout(new GridLayout(2, 1));
-        buttonPanel.add(numberSystemButton);
+        //buttonPanel.add(numberSystemButton);
         buttonPanel.add(decompileButton);
 
         // add components
