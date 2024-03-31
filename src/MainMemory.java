@@ -60,6 +60,15 @@ public class MainMemory {
         return data.length;
     }
 
+    // copies all data, making a new reference
+    public MainMemory deepCopy() {
+        MainMemory temp = new MainMemory(size());
+        for (int i = 0; i < size(); i++) {
+            temp.write(i, read(i));
+        }
+        return temp;
+    }
+
     public String toString() {
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < data.length; i++) {

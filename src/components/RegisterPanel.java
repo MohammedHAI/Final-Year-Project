@@ -64,11 +64,7 @@ public class RegisterPanel extends JComponent {
                 field8
         };
 
-        // test code, might remove later
-        field2.setEditable(false);
-        field4.setEditable(false);
-        field6.setEditable(false);
-        field8.setEditable(false);
+        field8.setEditable(false); // halted register
 
         // adding components
         for (int i = 0; i < NUMREGISTERS; i++) {

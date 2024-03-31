@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.io.*;
 import java.util.HexFormat;
+import java.util.Stack;
 
 public class MainController {
     public static void main(String[] args) {
@@ -28,9 +29,10 @@ public class MainController {
         VirtualComputer vc = new VirtualComputer(1, buffer);
         Thread vcThread = new Thread(vc);
         Instruction.setupLookups();
+        Stack<ComputerState> computerStates = new Stack<>();
 
         // program data, TODO: uncomment for production
-        /*short[] data = new short[] {0x02, 0x01,
+        short[] data = new short[] {0x02, 0x01,
                 0x06, 0x0A,
                 0x0B, 0x01,
                 0x0A, 0x0B,
@@ -38,7 +40,7 @@ public class MainController {
                 0x01, 0x00
         };
 
-        vc.state.mm.writeBlock(data);*/
+        vc.state.mm.writeBlock(data);
 
         // main code, run vc in separate thread from GUI
         BaseWindow bw = new BaseWindow(vc.state.mm.getData(256));
@@ -50,8 +52,13 @@ public class MainController {
             public void actionPerformed(ActionEvent e) {
                 // call any update methods here
                 synchronized (vc) {
-                    vc.notify();
-                    if (vc.state.halted) { bw.controls.updateRunLabel(true); } // notices a halt
+                    if (!vc.state.halted) {
+                        computerStates.push(vc.state.deepCopy()); // push current state before every step
+                        vc.notify();
+                    }
+                    else { // notices a halt
+                        bw.controls.updateRunLabel(true);
+                    }
                     updateRegisters(bw, vc);
                     updateTable(bw, vc);
                 }
@@ -59,7 +66,7 @@ public class MainController {
         });
 
         // test code, make run/stop and reset buttons work
-        addControlListeners(bw, vc, t, buffer);
+        addControlListeners(bw, vc, t, buffer, computerStates);
 
         addRegisterListeners(bw, vc);
 
@@ -79,7 +86,6 @@ public class MainController {
         DefaultTableModel model = getTableModel(bw, vc);
 
         // test code, main loop that handles data transfer between GUI and VC
-        // TODO: try to get this stuff in timer's event handler instead
         while (true) {
             synchronized (vc) {
                 if (vc.state.debug) {
@@ -90,16 +96,20 @@ public class MainController {
     }
 
     // for bw.controls
-    public static void addControlListeners(BaseWindow bw, VirtualComputer vc, Timer t, OutputBuffer buffer) {
+    public static void addControlListeners(BaseWindow bw, VirtualComputer vc, Timer t, OutputBuffer buffer, Stack<ComputerState> computerStates) {
         bw.controls.runStopButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) { // controls thread state in order to simulate halting
                 vc.state.halted = !vc.state.halted;
                 if (vc.state.halted) {
                     t.stop();
+                    updateRegisters(bw, vc);
+                    updateTable(bw, vc);
                 }
                 else {
                     t.start();
+                    updateRegisters(bw, vc);
+                    updateTable(bw, vc);
                 }
                 bw.controls.updateRunLabel(false);
             }
@@ -110,6 +120,9 @@ public class MainController {
             public void actionPerformed(ActionEvent e) {
                 t.stop();
                 vc.reset();
+                computerStates.clear(); // to prevent inconsistencies
+                updateRegisters(bw, vc);
+                updateTable(bw, vc);
             }
         });
 
@@ -281,13 +294,26 @@ public class MainController {
                 for (int i = 0; i < compiledCode.size(); i++) {
                     vc.state.mm.write(i, compiledCode.get(i));
                 }
+
+                // important!
+                updateTable(bw, vc);
             }
         });
 
         bw.controls.jumpToButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String input = (String) JOptionPane.showInputDialog(bw.frame, "Enter the address to jump to:", "Jump to...", JOptionPane.PLAIN_MESSAGE, null, null, "0");
+                // new code for stepBackwardsButton
+                if (!computerStates.empty()) {
+                    vc.state = computerStates.pop(); // effectively moves backwards
+                    updateRegisters(bw, vc);
+                    updateTable(bw, vc);
+                    t.stop();
+                    bw.controls.updateRunLabel(true);
+                }
+
+                // code below is for jumpToButton
+                /*String input = (String) JOptionPane.showInputDialog(bw.frame, "Enter the address to jump to:", "Jump to...", JOptionPane.PLAIN_MESSAGE, null, null, "0");
                 if (input != null) {
                     try {
                         int address = Integer.parseInt(input);
@@ -303,7 +329,7 @@ public class MainController {
                     catch (Exception e2) {
                         JOptionPane.showMessageDialog(null, "Error: couldn't parse input", "Error", JOptionPane.PLAIN_MESSAGE);
                     }
-                }
+                }*/
             }
         });
 
@@ -312,7 +338,10 @@ public class MainController {
             public void actionPerformed(ActionEvent e) {
                 // should successfully override the Virtual Computer halted state
                 synchronized (vc) {
+                    computerStates.push(vc.state.deepCopy()); // push before every step
                     vc.step();
+                    updateRegisters(bw, vc);
+                    updateTable(bw, vc);
                     vc.state.halted = true;
                     t.stop();
                 }
@@ -329,14 +358,14 @@ public class MainController {
         });
     }
 
-    // makes it easier
+    // for general regsisters
     public static void addRegisterDocumentListener(JTextField registerField, VirtualComputer vc, int registerNumber, String registerName) {
         registerField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 synchronized (vc) {
                     try {
-                        Short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
                         if (value < 0) {
                             value = 0;
                         }
@@ -355,7 +384,7 @@ public class MainController {
             public void removeUpdate(DocumentEvent e) {
                 synchronized (vc) {
                     try {
-                        Short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
                         if (value < 0) {
                             value = 0;
                         }
@@ -381,91 +410,177 @@ public class MainController {
         addRegisterDocumentListener(bw.registers.field3, vc, 1, "B");
         addRegisterDocumentListener(bw.registers.field5, vc, 2, "C");
         addRegisterDocumentListener(bw.registers.field7, vc, 3, "D");
+
+        // don't like having to copy code but this is the only way...
+        bw.registers.field2.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.PC = value;
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.PC = value;
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {}
+        });
+
+        bw.registers.field4.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.SP = value;
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.SP = value;
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {}
+        });
+
+        bw.registers.field6.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.statusFlag = value;
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                synchronized (vc) {
+                    try {
+                        short value = Short.parseShort(e.getDocument().getText(0, e.getDocument().getLength()));
+                        if (value < 0) {
+                            value = 0;
+                        }
+                        else if (value > 255) {
+                            value = 255;
+                        }
+                        vc.state.statusFlag = value;
+                    }
+                    catch (Exception e2) {
+                        //System.out.println("Failed to write to register " + registerName);
+                    }
+                }
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {}
+        });
     }
 
     // for bw.viewer
     public static void addViewerListeners(BaseWindow bw, VirtualComputer vc) {
-        /*bw.viewer.numberSystemButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // test code
-                // TODO: implement number system switching
-
-                if (bw.viewer.useHexadecimal) {
-                    JOptionPane.showMessageDialog(null, "Table changed to decimal number system");
-                }
-                else {
-                    JOptionPane.showMessageDialog(null, "Table changed to hexadecimal number system");
-                }
-
-                bw.viewer.useHexadecimal = !bw.viewer.useHexadecimal;
-                bw.viewer.updateTable();
-            }
-        });*/
-
         bw.viewer.decompileButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // test code
-                JDialog confirmDialog = new JDialog(bw.frame, "Confirm decompilation");
-                JTextArea text = new JTextArea("Decompilation will overwrite your current program with the one from memory.\n\nAre you sure you want to do this?");
-                JPanel buttonPanel = new JPanel();
-                JButton noButton = new JButton("No");
-                JButton yesButton = new JButton("Yes");
-                confirmDialog.setSize(new Dimension(300, 200));
-                confirmDialog.setLocationRelativeTo(null);
+                int choice = JOptionPane.showConfirmDialog(bw.frame, "Decompilation will overwrite your current program with the one from memory.\n\nAre you sure you want to do this?", "Confirm decompilation", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null);
+                System.out.println("choice: " + choice);
 
-                text.setLineWrap(true);
-                buttonPanel.setLayout(new FlowLayout());
-                noButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        confirmDialog.dispose(); // close immediately
-                    }
-                });
+                if (choice == 0) {
+                    // perform the action before closing
+                    JTextArea code = bw.editor.textArea;
+                    code.setText(".main"); // clear the current code
 
-                yesButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        // perform the action before closing
-                        JTextArea code = bw.editor.textArea;
-                        code.setText(".main"); // clear the current code
+                    // this performs the translation from bytes to mnemonics
+                    int i = 0;
+                    String nextByte;
+                    String nextOpcode;
+                    String nextOperand;
+                    boolean finished = false;
+                    while (!finished) {
+                        nextByte = (String) bw.viewer.table.getValueAt(i / 16, (i % 16) + 1); // add one to columns because the first one is the address offset
+                        nextOpcode = Instruction.decompileOpcode(nextByte); // need as string
+                        nextOperand = (String) bw.viewer.table.getValueAt((i + 1) / 16, ((i + 1) % 16) + 1);
 
-                        // this performs the translation from bytes to mnemonics
-                        int i = 0;
-                        String nextByte;
-                        String nextOpcode;
-                        String nextOperand;
-                        boolean finished = false;
-                        while (!finished) {
-                            nextByte = (String) bw.viewer.table.getValueAt(i / 16, (i % 16) + 1); // add one to columns because the first one is the address offset
-                            nextOpcode = Instruction.decompileOpcode(nextByte); // need as string
-                            nextOperand = (String) bw.viewer.table.getValueAt((i + 1) / 16, ((i + 1) % 16) + 1);
-
-                            if (nextOpcode.equals("NOP") || nextOpcode.equals("Unknown")) {
-                                finished = true;
-                            }
-                            else { // not finished
-                                code.append("\n");
-                            }
-
-                            if (!finished) {
-                                code.append(nextOpcode + " ");
-                                code.append(nextOperand);
-                                i += 2; // jump by opcodes
-                            }
-
+                        if (nextOpcode.equals("NOP") || nextOpcode.equals("Unknown")) {
+                            finished = true;
+                        }
+                        else { // not finished
+                            code.append("\n");
                         }
 
-                        confirmDialog.dispose();
-                    }
-                });
+                        if (!finished) {
+                            code.append(nextOpcode + " ");
+                            code.append(nextOperand);
+                            i += 2; // jump by opcodes
+                        }
 
-                confirmDialog.add(text, BorderLayout.CENTER);
-                buttonPanel.add(noButton);
-                buttonPanel.add(yesButton);
-                confirmDialog.add(buttonPanel, BorderLayout.SOUTH);
-                confirmDialog.setVisible(true);
+                    }
+                }
             }
         });
 
@@ -625,6 +740,7 @@ public class MainController {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //System.out.println("About clicked!");
+                JOptionPane.showMessageDialog(bw.frame, "Virtual Computer Tool v0.1\n\n(C) 2024 Mohammed Al-Islam", "About", JOptionPane.INFORMATION_MESSAGE);
             }
         });
     }

@@ -22,6 +22,13 @@ public class Register {
         data = newData;
     }
 
+    // copies all data, making a new reference
+    public Register deepCopy() {
+        Register temp = new Register(name);
+        temp.write(read());
+        return temp;
+    }
+
     @Override
     public String toString() {
         return name + ": " + data;

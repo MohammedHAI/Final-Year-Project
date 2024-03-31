@@ -85,13 +85,11 @@ public class VirtualComputer implements Runnable {
         // decode and execute
         state.halted = currentInstruction.execute(state, buffer);
         if (!state.halted) {
-            synchronized (this) {
-                buffer.setMessage(currentInstruction.toString() + "\n");
-                buffer.unlockMessage();
-            }
             state.statusFlag &= ~(0b00000001); // clear reset bit (mask NOT reset)
             state.PC = state.PC + 2;
             if (state.PC >= 256) { state.PC = 0; } // prevent out of bounds
+            buffer.setMessage(currentInstruction.toString() + "\n");
+            buffer.unlockMessage();
         }
         else {
             synchronized (this) {
