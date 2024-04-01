@@ -37,6 +37,7 @@ class Mnemonics {
     final static short RET = 48;   // RETurn
     final static short OUTC = 50;  // OUTput a Character to the screen
     final static short OUTS = 51;  // OUTput a String to the screen
+    final static short OUTR = 52;  // OUTput the value of a Register to the screen
     final static short HLT = 255;  // HaLT program
 }
 
@@ -285,6 +286,17 @@ public class Instruction {
                 buffer.lockMessage();
             break;
 
+            case Mnemonics.OUTR:
+                int regX6 = (operand >> 2);
+                if (regX6 < 4) {
+                    buffer.setMessage(String.valueOf(state.registers[regX6].read()));
+                    buffer.lockMessage();
+                }
+                else {
+                    state.statusFlag |= Status.ERROR2;
+                }
+                break;
+
             case Mnemonics.HLT:
                 return true;
 
@@ -324,6 +336,7 @@ public class Instruction {
         mnemonicLookup.put("RET", Mnemonics.RET);
         mnemonicLookup.put("OUTC", Mnemonics.OUTC);
         mnemonicLookup.put("OUTS", Mnemonics.OUTS);
+        mnemonicLookup.put("OUTR", Mnemonics.OUTR);
         mnemonicLookup.put("HLT", Mnemonics.HLT);
 
         // reverse lookup for decompiling, not very efficient
@@ -354,6 +367,7 @@ public class Instruction {
         byteLookup.put(Mnemonics.RET, "RET");
         byteLookup.put(Mnemonics.OUTC, "OUTC");
         byteLookup.put(Mnemonics.OUTS, "OUTS");
+        byteLookup.put(Mnemonics.OUTR, "OUTR");
         byteLookup.put(Mnemonics.HLT, "HLT");
     }
 
