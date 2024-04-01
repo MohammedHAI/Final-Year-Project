@@ -19,10 +19,14 @@ class Mnemonics {
     final static short LDAB = 6;   // LoaD from Address into register B
     final static short LDAC = 7;   // LoaD from Address into register C
     final static short LDAD = 8;   // LoaD from Address into register D
-    final static short STA = 10;  // STore from register A into Address
-    final static short STB = 11;  // STore from register B into Address
-    final static short STC = 12;  // STore from register C into Address
-    final static short STD = 13;  // STore from register D into Address
+    final static short STRA = 10;  // STore from register A into the address of Register X
+    final static short STRB = 11;  // STore from register B into the address of Register X
+    final static short STRC = 12;  // STore from register C into the address of Register X
+    final static short STRD = 13;  // STore from register D into the address of Register X
+    final static short STAA = 14;  // STore from register A into Address
+    final static short STAB = 15;  // STore from register B into Address
+    final static short STAC = 16;  // STore from register C into Address
+    final static short STAD = 17;  // STore from register D into Address
     final static short MOV = 20;   // MOVe value between registers (actually copies)
     final static short ADD = 21;   // ADD two register values
     final static short SUB = 22;   // SUBtract two register values
@@ -103,19 +107,39 @@ public class Instruction {
                 state.registers[3].write(state.mm.read(operand));
                 break;
 
-            case Mnemonics.STA:
+            case Mnemonics.STRA:
+                int regX7 = (operand & 0b11);
+                state.mm.write(state.registers[regX7].read(), state.registers[0].read());
+                break;
+
+            case Mnemonics.STRB:
+                int regX8 = (operand & 0b11);
+                state.mm.write(state.registers[regX8].read(), state.registers[1].read());
+                break;
+
+            case Mnemonics.STRC:
+                int regX9 = (operand & 0b11);
+                state.mm.write(state.registers[regX9].read(), state.registers[2].read());
+                break;
+
+            case Mnemonics.STRD:
+                int regX10 = (operand & 0b11);
+                state.mm.write(state.registers[regX10].read(), state.registers[3].read());
+                break;
+
+            case Mnemonics.STAA:
                 state.mm.write(operand, state.registers[0].read());
                 break;
 
-            case Mnemonics.STB:
+            case Mnemonics.STAB:
                 state.mm.write(operand, state.registers[1].read());
                 break;
 
-            case Mnemonics.STC:
+            case Mnemonics.STAC:
                 state.mm.write(operand, state.registers[2].read());
                 break;
 
-            case Mnemonics.STD:
+            case Mnemonics.STAD:
                 state.mm.write(operand, state.registers[3].read());
                 break;
 
@@ -290,14 +314,9 @@ public class Instruction {
             break;
 
             case Mnemonics.OUTR:
-                int regX6 = (operand >> 2);
-                if (regX6 < 4) {
-                    buffer.setMessage(String.valueOf(state.registers[regX6].read()));
-                    buffer.lockMessage();
-                }
-                else {
-                    state.statusFlag |= Status.ERROR2;
-                }
+                int regX6 = (operand & 0b11);
+                buffer.setMessage(String.valueOf(state.registers[regX6].read()));
+                buffer.lockMessage();
                 break;
 
             case Mnemonics.HLT:
@@ -321,10 +340,14 @@ public class Instruction {
         mnemonicLookup.put("LDAB", Mnemonics.LDAB);
         mnemonicLookup.put("LDAC", Mnemonics.LDAC);
         mnemonicLookup.put("LDAD", Mnemonics.LDAD);
-        mnemonicLookup.put("STA", Mnemonics.STA);
-        mnemonicLookup.put("STB", Mnemonics.STB);
-        mnemonicLookup.put("STC", Mnemonics.STC);
-        mnemonicLookup.put("STD", Mnemonics.STD);
+        mnemonicLookup.put("STRA", Mnemonics.STRA);
+        mnemonicLookup.put("STRB", Mnemonics.STRB);
+        mnemonicLookup.put("STRC", Mnemonics.STRC);
+        mnemonicLookup.put("STRD", Mnemonics.STRD);
+        mnemonicLookup.put("STAA", Mnemonics.STAA);
+        mnemonicLookup.put("STAB", Mnemonics.STAB);
+        mnemonicLookup.put("STAC", Mnemonics.STAC);
+        mnemonicLookup.put("STAD", Mnemonics.STAD);
         mnemonicLookup.put("MOV", Mnemonics.MOV);
         mnemonicLookup.put("ADD", Mnemonics.ADD);
         mnemonicLookup.put("SUB", Mnemonics.SUB);
@@ -352,10 +375,14 @@ public class Instruction {
         byteLookup.put(Mnemonics.LDAB, "LDAB");
         byteLookup.put(Mnemonics.LDAC, "LDAC");
         byteLookup.put(Mnemonics.LDAD, "LDAD");
-        byteLookup.put(Mnemonics.STA, "STA");
-        byteLookup.put(Mnemonics.STB, "STB");
-        byteLookup.put(Mnemonics.STC, "STC");
-        byteLookup.put(Mnemonics.STD, "STD");
+        byteLookup.put(Mnemonics.STRA, "STRA");
+        byteLookup.put(Mnemonics.STRB, "STRB");
+        byteLookup.put(Mnemonics.STRC, "STRC");
+        byteLookup.put(Mnemonics.STRD, "STRD");
+        byteLookup.put(Mnemonics.STAA, "STAA");
+        byteLookup.put(Mnemonics.STAB, "STAB");
+        byteLookup.put(Mnemonics.STAC, "STAC");
+        byteLookup.put(Mnemonics.STAD, "STAD");
         byteLookup.put(Mnemonics.MOV, "MOV");
         byteLookup.put(Mnemonics.ADD, "ADD");
         byteLookup.put(Mnemonics.SUB, "SUB");
