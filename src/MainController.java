@@ -30,16 +30,15 @@ public class MainController {
         Instruction.setupLookups();
         Stack<ComputerState> computerStates = new Stack<>();
 
-        // program data, TODO: uncomment for production
-        short[] data = new short[] {0x02, 0x01,
+        // program data, uncomment for production
+        /*short[] data = new short[] {0x02, 0x01,
                 0x06, 0x0A,
                 0x0B, 0x01,
                 0x0A, 0x0B,
                 0xFF, 0x00,
                 0x01, 0x00
         };
-
-        vc.state.mm.writeBlock(data);
+        vc.state.mm.writeBlock(data);*/
 
         // main code, run vc in separate thread from GUI
         BaseWindow bw = new BaseWindow(vc.state.mm.getData(256));

@@ -29,7 +29,7 @@ public class OutputArea extends JComponent {
         textArea.setLineWrap(true);
         JPanel buttonPanel = new JPanel();
         clearButton = new JButton("Clear");
-        debugButton = new JButton("Toggle Debug Output");
+        debugButton = new JButton("Toggle Output");
 
         textArea.setFont(new Font("Serif", Font.PLAIN, 14));
         scrollPane.setPreferredSize(new Dimension(600, 100)); // very important!

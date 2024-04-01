@@ -59,9 +59,9 @@ public class VirtualComputer implements Runnable {
 
             step();
 
-            if (state.debug && state.halted) {
-                //System.out.println("halted");
-            }
+            /*if (state.debug && state.halted) {
+                System.out.println("halted");
+            }*/
         }
     }
 
@@ -70,17 +70,17 @@ public class VirtualComputer implements Runnable {
         // fetch
         Instruction currentInstruction = new Instruction(state.mm.read(state.PC), state.mm.read(state.PC + 1));
 
-        // debug output
-        if (state.debug) {
-            //System.out.println(currentInstruction);
-            //System.out.println(state.mm);
+        // old debug output
+        /*if (state.debug) {
+            System.out.println(currentInstruction);
+            System.out.println(state.mm);
 
             for (int i = 0; i < NUMBEROFREGISTERS; i++) {
-                //System.out.println(state.registers[i]);
+                System.out.println(state.registers[i]);
             }
 
-            //System.out.println();
-        }
+            System.out.println();
+        }*/
 
         // decode and execute
         state.halted = currentInstruction.execute(state, buffer);
