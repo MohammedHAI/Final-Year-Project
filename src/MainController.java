@@ -20,7 +20,6 @@ import java.awt.event.MouseEvent;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.io.*;
-import java.util.HexFormat;
 import java.util.Stack;
 
 public class MainController {
@@ -300,7 +299,7 @@ public class MainController {
             }
         });
 
-        bw.controls.jumpToButton.addActionListener(new ActionListener() {
+        bw.controls.stepBackwardsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // new code for stepBackwardsButton
@@ -311,25 +310,6 @@ public class MainController {
                     t.stop();
                     bw.controls.updateRunLabel(true);
                 }
-
-                // code below is for jumpToButton
-                /*String input = (String) JOptionPane.showInputDialog(bw.frame, "Enter the address to jump to:", "Jump to...", JOptionPane.PLAIN_MESSAGE, null, null, "0");
-                if (input != null) {
-                    try {
-                        int address = Integer.parseInt(input);
-                        if (address > -1 && address < 256) { // within memory region
-                            synchronized (vc) {
-                                vc.state.PC = Integer.parseInt(input);
-                            }
-                        }
-                        else {
-                            throw new Exception("Error: address out of bounds");
-                        }
-                    }
-                    catch (Exception e2) {
-                        JOptionPane.showMessageDialog(null, "Error: couldn't parse input", "Error", JOptionPane.PLAIN_MESSAGE);
-                    }
-                }*/
             }
         });
 

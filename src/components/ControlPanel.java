@@ -18,7 +18,7 @@ public class ControlPanel extends JComponent {
 
     public JButton runStopButton;
     public JButton stepForwardsButton;
-    public JButton jumpToButton;
+    public JButton stepBackwardsButton;
     public JButton resetButton;
     public JSpinner speedSpinner;
     public JPanel panel;
@@ -29,7 +29,7 @@ public class ControlPanel extends JComponent {
         // define components
         runStopButton = new JButton(runState);
         stepForwardsButton = new JButton("Step Forwards");
-        jumpToButton = new JButton("Jump to...");
+        stepBackwardsButton = new JButton("Step Backwards");
         resetButton = new JButton("Reset");
         JLabel speedLabel = new JLabel("Clock speed (Hz)");
         SpinnerListModel model = new SpinnerListModel();
@@ -42,7 +42,7 @@ public class ControlPanel extends JComponent {
         // add components
         panel.add(runStopButton);
         panel.add(resetButton);
-        panel.add(jumpToButton);
+        panel.add(stepBackwardsButton);
         panel.add(stepForwardsButton);
         panel.add(speedLabel);
         panel.add(speedSpinner);
