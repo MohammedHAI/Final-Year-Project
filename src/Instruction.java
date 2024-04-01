@@ -168,7 +168,16 @@ public class Instruction {
                 break;
 
             case Mnemonics.JMP:
+                state.mm.write(STACKBASE + state.SP, (short) state.PC);
+                state.SP += 1;
                 state.PC = operand;
+                if (state.SP > 15) { // stack overflow
+                    state.SP = 0;
+                    state.statusFlag |= Status.ERROR1;
+                }
+                else {
+                    state.statusFlag |= Status.BRANCH;
+                }
                 break;
 
             case Mnemonics.CMPE:
@@ -204,29 +213,13 @@ public class Instruction {
                 break;
 
             case Mnemonics.BRC:
-                state.mm.write(STACKBASE + state.SP, (short) state.PC);
-                state.SP += 1;
                 state.PC = operand;
-                if (state.SP > 15) { // stack overflow
-                    state.SP = 0;
-                    state.statusFlag |= Status.ERROR1;
-                }
-                else {
-                    state.statusFlag |= Status.BRANCH;
-                }
+                state.statusFlag |= Status.BRANCH;
 
             case Mnemonics.BEQ:
                 if ((state.statusFlag & Status.EQUAL) > 0) {
-                    state.mm.write(STACKBASE + state.SP, (short) state.PC);
-                    state.SP += 1;
                     state.PC = operand;
-                    if (state.SP > 15) { // stack overflow
-                        state.SP = 0;
-                        state.statusFlag |= Status.ERROR1;
-                    }
-                    else {
-                        state.statusFlag |= Status.BRANCH;
-                    }
+                    state.statusFlag |= Status.BRANCH;
                 }
                 else {
                     state.statusFlag |= Status.ERROR2;
@@ -234,16 +227,8 @@ public class Instruction {
 
             case Mnemonics.BNE:
                 if ((state.statusFlag & Status.EQUAL) < 1) {
-                    state.mm.write(STACKBASE + state.SP, (short) state.PC);
-                    state.SP += 1;
                     state.PC = operand;
-                    if (state.SP > 15) { // stack overflow
-                        state.SP = 0;
-                        state.statusFlag |= Status.ERROR1;
-                    }
-                    else {
-                        state.statusFlag |= Status.BRANCH;
-                    }
+                    state.statusFlag |= Status.BRANCH;
                 }
                 else {
                     state.statusFlag |= Status.ERROR2;
@@ -251,16 +236,8 @@ public class Instruction {
 
             case Mnemonics.BGT:
             if ((state.statusFlag & Status.GREATER) > 0) {
-                state.mm.write(STACKBASE + state.SP, (short) state.PC);
-                state.SP += 1;
                 state.PC = operand;
-                if (state.SP > 15) { // stack overflow
-                    state.SP = 0;
-                    state.statusFlag |= Status.ERROR1;
-                }
-                else {
-                    state.statusFlag |= Status.BRANCH;
-                }
+                state.statusFlag |= Status.BRANCH;
             }
             else {
                 state.statusFlag |= Status.ERROR2;
@@ -268,16 +245,8 @@ public class Instruction {
 
             case Mnemonics.BLT:
                 if ((state.statusFlag & Status.GREATER) < 1 && (state.statusFlag & Status.EQUAL) < 1) {
-                    state.mm.write(STACKBASE + state.SP, (short) state.PC);
-                    state.SP += 1;
                     state.PC = operand;
-                    if (state.SP > 15) { // stack overflow
-                        state.SP = 0;
-                        state.statusFlag |= Status.ERROR1;
-                    }
-                    else {
-                        state.statusFlag |= Status.BRANCH;
-                    }
+                    state.statusFlag |= Status.BRANCH;
                 }
                 else {
                     state.statusFlag |= Status.ERROR2;
