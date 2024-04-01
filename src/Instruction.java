@@ -156,9 +156,9 @@ public class Instruction {
 
             case Mnemonics.ADD:
                 int regX2 = (operand >> 4);
-                int regY2 = (operand & 0b1100); // mask second set of 2 bits
+                int regY2 = ((operand & 0b1100) >> 2); // mask second set of 2 bits
                 int regZ = (operand & 0b11); // mask first 2 bits
-                if (regX2 < 4 && regY2 < 4) {
+                if (regX2 < 4) {
                     short result = (short) (state.registers[regY2].read() + state.registers[regZ].read());
                     if (result < 0 || result > 255) { // check for overflow
                         state.statusFlag |= (Status.OVERFLOW | Status.ERROR1);
@@ -175,9 +175,9 @@ public class Instruction {
 
             case Mnemonics.SUB:
                 int regX3 = (operand >> 4);
-                int regY3 = (operand & 0b1100); // mask second set of 2 bits
+                int regY3 = ((operand & 0b1100) >> 2); // mask second set of 2 bits
                 int regZ2 = (operand & 0b11); // mask first 2 bits
-                if (regX3 < 4 && regY3 < 4) {
+                if (regX3 < 4) {
                     short result = (short) (state.registers[regY3].read() - state.registers[regZ2].read());
                     if (result < 0 || result > 255) { // check for overflow
                         state.statusFlag |= (Status.OVERFLOW | Status.ERROR1);

@@ -527,7 +527,7 @@ public class MainController {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int choice = JOptionPane.showConfirmDialog(bw.frame, "Decompilation will overwrite your current program with the one from memory.\n\nAre you sure you want to do this?", "Confirm decompilation", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null);
-                System.out.println("choice: " + choice);
+                //System.out.println("choice: " + choice);
 
                 if (choice == 0) {
                     // perform the action before closing
@@ -789,7 +789,7 @@ public class MainController {
             vcThread.start(); // will call VirtualComputer.run()
         }
         catch (Exception e) {
-            System.out.println("Virtual Computer has crashed!");
+            //System.out.println("Virtual Computer has crashed!");
             e.printStackTrace();
         }
     }

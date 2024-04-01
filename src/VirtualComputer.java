@@ -53,7 +53,7 @@ public class VirtualComputer implements Runnable {
                 try {
                     wait(); // requires timer to allow it to continue
                 } catch (InterruptedException interruptedException) {
-                    System.out.println("CPU interrupted");
+                    //System.out.println("CPU interrupted");
                 }
             }
 
