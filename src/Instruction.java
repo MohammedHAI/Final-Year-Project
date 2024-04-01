@@ -240,6 +240,7 @@ public class Instruction {
             case Mnemonics.BRC:
                 state.PC = operand;
                 state.statusFlag |= Status.BRANCH;
+                break;
 
             case Mnemonics.BEQ:
                 if ((state.statusFlag & Status.EQUAL) > 0) {
@@ -249,6 +250,7 @@ public class Instruction {
                 else {
                     state.statusFlag |= Status.ERROR2;
                 }
+                break;
 
             case Mnemonics.BNE:
                 if ((state.statusFlag & Status.EQUAL) < 1) {
@@ -258,15 +260,17 @@ public class Instruction {
                 else {
                     state.statusFlag |= Status.ERROR2;
                 }
+                break;
 
             case Mnemonics.BGT:
-            if ((state.statusFlag & Status.GREATER) > 0) {
-                state.PC = operand;
-                state.statusFlag |= Status.BRANCH;
-            }
-            else {
-                state.statusFlag |= Status.ERROR2;
-            }
+                if ((state.statusFlag & Status.GREATER) > 0) {
+                    state.PC = operand;
+                    state.statusFlag |= Status.BRANCH;
+                }
+                else {
+                    state.statusFlag |= Status.ERROR2;
+                }
+                break;
 
             case Mnemonics.BLT:
                 if ((state.statusFlag & Status.GREATER) < 1 && (state.statusFlag & Status.EQUAL) < 1) {
@@ -276,6 +280,7 @@ public class Instruction {
                 else {
                     state.statusFlag |= Status.ERROR2;
                 }
+                break;
 
             case Mnemonics.RET:
                 int returnAddress = state.mm.read(STACKBASE + state.SP);
@@ -293,7 +298,7 @@ public class Instruction {
             case Mnemonics.OUTC:
                 buffer.setMessage(new String(Character.toChars(operand))); // get unicode representation of operand
                 buffer.lockMessage();
-            break;
+                break;
 
             case Mnemonics.OUTS:
                 StringBuilder sb = new StringBuilder();
@@ -311,7 +316,7 @@ public class Instruction {
                 }
                 buffer.setMessage(sb.toString());
                 buffer.lockMessage();
-            break;
+                break;
 
             case Mnemonics.OUTR:
                 int regX6 = (operand & 0b11);
