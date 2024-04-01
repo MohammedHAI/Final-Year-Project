@@ -256,7 +256,10 @@ public class Instruction {
             case Mnemonics.RET:
                 int returnAddress = state.mm.read(STACKBASE + state.SP);
                 state.SP -= 1;
-                state.PC = returnAddress;
+                state.PC = returnAddress + 2; // next instruction after return address
+                if (state.PC > 255) { // to prevent out of bounds
+                    state.PC = 0;
+                }
                 if (state.SP < 0) { // stack underflow
                     state.SP = 15;
                     state.statusFlag |= Status.ERROR1;

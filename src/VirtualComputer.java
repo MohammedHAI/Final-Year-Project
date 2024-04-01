@@ -68,6 +68,7 @@ public class VirtualComputer implements Runnable {
     // executes one instruction cycle
     public void step() {
         // fetch
+        int oldPC = state.PC;
         Instruction currentInstruction = new Instruction(state.mm.read(state.PC), state.mm.read(state.PC + 1));
 
         // old debug output
@@ -86,7 +87,9 @@ public class VirtualComputer implements Runnable {
         state.halted = currentInstruction.execute(state, buffer);
         if (!state.halted) {
             state.statusFlag &= ~(0b00000001); // clear reset bit (mask NOT reset)
-            state.PC = state.PC + 2;
+            if (oldPC == state.PC) { // if PC hasn't been changed by JMP or a branch instruction
+                state.PC = state.PC + 2;
+            }
             if (state.PC >= 256) { state.PC = 0; } // prevent out of bounds
             buffer.setMessage(currentInstruction.toString() + "\n");
             buffer.unlockMessage();
@@ -110,7 +113,7 @@ public class VirtualComputer implements Runnable {
         state.registers[2].write((short) 0);
         state.registers[3].write((short) 0);
 
-        state.statusFlag |= 0b00000001; // set reset bit
+        state.statusFlag = 0b00000001; // only reset bit
         state.PC = 0;
         state.SP = 0;
         state.halted = true;
