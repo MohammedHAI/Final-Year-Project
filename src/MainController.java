@@ -23,9 +23,8 @@ import java.io.*;
 import java.util.Stack;
 
 public class MainController {
-    public static void main(String[] args) {
-        OutputBuffer buffer = new OutputBuffer();
-        VirtualComputer vc = new VirtualComputer(1, buffer);
+    public static void main(VirtualComputer vc, BaseWindow bw, OutputBuffer buffer) {
+
         Thread vcThread = new Thread(vc);
         Instruction.setupLookups();
         Stack<ComputerState> computerStates = new Stack<>();
@@ -41,7 +40,6 @@ public class MainController {
         vc.state.mm.writeBlock(data);*/
 
         // main code, run vc in separate thread from GUI
-        BaseWindow bw = new BaseWindow(vc.state.mm.getData(256));
         startVirtualComputer(vcThread);
 
         // controls all timing for GUI and virtual computer

@@ -320,7 +320,7 @@ public class Instruction {
 
             case Mnemonics.OUTR:
                 int regX6 = (operand & 0b11);
-                buffer.setMessage(String.valueOf(state.registers[regX6].read()));
+                buffer.setMessage(new String(Character.toChars(state.registers[regX6].read())));
                 buffer.lockMessage();
                 break;
 
