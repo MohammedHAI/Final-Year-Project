@@ -23,7 +23,7 @@ public class BaseWindow {
     public ToolMenuBar menu;
 
     public BaseWindow(short[] memory) {
-        frame = new JFrame("Main Window");
+        frame = new JFrame("Virtual Computer Tool");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setPreferredSize(new Dimension(1280, 720));
         frame.setLayout(new BorderLayout());
