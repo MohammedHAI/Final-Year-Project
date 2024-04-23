@@ -264,6 +264,12 @@ public class MainController {
                         case ENDCONSTANT -> {
                             // deal with integers and strings differently (using t, TYPE)
                             if (t == TYPE.INT) {
+                                if (intConstant < 0) {
+                                    intConstant = 0;
+                                }
+                                if (intConstant > 255) {
+                                    intConstant = 255;
+                                }
                                 vc.state.mm.write(constantPos + CONSTANTBASE, intConstant); // double check that this works
                                 constantPos++;
                             }
