@@ -5,8 +5,6 @@
 
 package components;
 
-import com.sun.jdi.FloatType;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -17,7 +15,7 @@ import java.awt.*;
 public class OutputArea extends JComponent {
     public JTextArea textArea;
     public JButton clearButton;
-    public JButton debugButton;
+    public JCheckBox debugBox;
 
     public OutputArea() {
         setLayout(new BorderLayout());
@@ -29,16 +27,17 @@ public class OutputArea extends JComponent {
         textArea.setLineWrap(true);
         JPanel buttonPanel = new JPanel();
         clearButton = new JButton("Clear");
-        debugButton = new JButton("Toggle Output");
+        debugBox = new JCheckBox("Enable Output");
 
         textArea.setFont(new Font("Serif", Font.PLAIN, 14));
         scrollPane.setPreferredSize(new Dimension(600, 100)); // very important!
+        debugBox.setSelected(true);
 
         // add components
         scrollPane.setViewportView(textArea);
         add(scrollPane, BorderLayout.NORTH);
         buttonPanel.add(clearButton);
-        buttonPanel.add(debugButton);
+        buttonPanel.add(debugBox);
         add(buttonPanel, BorderLayout.SOUTH);
     }
 }

@@ -593,11 +593,12 @@ public class MainController {
             }
         });
 
-        bw.output.debugButton.addActionListener(new ActionListener() {
+        bw.output.debugBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 synchronized (vc) {
                     vc.state.debug = !vc.state.debug;
+                    //bw.output.debugButton
                 }
             }
         });
