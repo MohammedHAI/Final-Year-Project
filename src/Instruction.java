@@ -413,7 +413,12 @@ public class Instruction {
 
     // Get an operand as a byte
     public static short compileOperand(String data) {
-        return Short.parseShort(data.strip());
+        try {
+            return Short.parseShort(data.strip());
+        }
+        catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // Get the mnemonic for a byte, if it exists
